@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>wm-sim webworker complex example</title>
+	<style>
+		body{
+			background-color: #CCCCCC;
+			font-family: Arial;
+			font-size: 12pt;
+		}
+		#logarea{
+			border: 1px solid #000000;
+			padding: 10px;
+			margin: 10px;
+		}
+	</style>
+	
+<script type='text/javascript'>
+//runs when bsttle button is pressed
+function run(form){
+	var useWorker = false;
+	var outputText = "";
+	var timeout = undefined;
+	var maxThreads = form.maxthreads.value || 5;
+	var workers;
+	window.clearTimeout(timeout);
+	
+	if(typeof workers !== 'undefined'){	
+		for(var i = 0; i < maxThreads; i++){
+			if(workers[i])
+				workers[i].terminate();
+		}
+	}
+	workers = [];
+
+	var f1 = form.force1.value;
+	var p1 = parseFloat(form.power1.value.replace(/,/g,""));
+	var multi = form.doavg[1].checked;
+	var mode = form.mode[1].checked;
+	var f2 = form.force2.value;
+	var p2 = parseFloat(form.power2.value.replace(/,/g,""));
+	var lvl = parseFloat(form.deflvl.value.replace(/,/g,""));
+	
+	var reinf = form.reinf.checked;
+	var trackdmg = form.dmgs.checked;
+	var jammed = form.jams.checked;
+	
+	var repetitions = 10;
+	if(form.reps[0].checked)repetitions = 10; else
+	if(form.reps[1].checked) repetitions = 100; else
+	if(form.reps[2].checked) repetitions = 1000;
+	
+	var totalDamageGiven = 0;
+	var totalDamageTaken = 0;
+	var totalHealing1 = 0;
+	var totalHealing2 = 0;
+	var totalAttack = 0;
+	var totalDefence = 0;
+	var wins = 0;
+	var losses = 0;
+	var trackStats1 = {};
+	var trackStats2 = {};
+	var jamCount1 = {};
+	var jamCount2 = {};
+	var trackDamage1 = {};
+	var trackDamage2 = {};
+	var trackHeal1 = {};
+	var trackHeal2 = {};
+	
+	var reps = 1;
+	var doOutput = 1;
+	var threads = maxThreads;
+	if(multi){
+		reps = repetitions;
+		document.getElementById("logarea").innerHTML = "Computing 100+ battles can take a few seconds...please be patient.";
+		doOutput = 0;
+	}else{
+		threads = 1;
+	}
+	
+	if(typeof(Worker)!=="undefined") useWorker = form.useworker[0].checked;//useWorker = false;
+	
+	var stime = new Date();
+	
+	var rep = 0;
+	var BATTLE = function(t){
+		if(rep != reps){
+			rep++;
+			if(useWorker){
+				workers[t].postMessage({
+					'cmd': 'battle'
+				});
+			}else{
+				var b = runner.battle();
+				outputText = runner.getText();
+				battleAfter(b);
+			}			
+		}
+	}
+	
+	if(useWorker){
+		for(var k = 0; k < threads; k++){
+			workers[k] = new Worker('gmsim.main.js');
+		
+			workers[k].addEventListener('message', (function(a){ return function(e) {
+				var d = e.data;
+				switch(d.msg){
+					case "setup"://wait for worker to setup
+						BATTLE(a);
+						break;
+					case "battle":
+						outputText = d.str;
+						battleAfter(d.result, a);
+						break;
+					case "error":
+						if(typeof console.log !== 'undefined')
+							console.log(d['content']);
+						else
+							alert(d['content']);
+						break;
+				}
+			};})(k), false);
+		}
+		
+		//passing the url in is mostly a workaround so it will work in a file:// environment
+		var url = document.location.href;
+		var index = url.lastIndexOf('/');
+		if (index != -1) {
+		  url = url.substring(0, index+1);
+		}
+		for(var i = 0; i < threads; i++){
+			workers[i].postMessage({
+				'cmd': 'setup',
+				'epicMode': (mode==1)?1:0,
+				'force1': f1,
+				'force2': f2,
+				'power1': p1,
+				'power2': p2,
+				'defenderLevel': lvl,
+				'doOutput': doOutput,
+				'url': url,
+				'simdata': 'data/simdata.js'//unfortunately, we can only pass string into the worker, so we need to do this instead
+			});
+		}
+	}else{
+		var runner = new gmsim.battleRunner({
+			'epicMode': (mode==1)?1:0,
+			'force1': f1,
+			'force2': f2,
+			'power1': p1,
+			'power2': p2,
+			'defenderLevel': lvl,
+			'doOutput': doOutput,
+		});
+		BATTLE();
+	}
+
+	var ress = [];
+	
+	function battleAfter(res, t){
+		totalAttack += res.forcedmg1;
+		totalDefence += res.forcedmg2;
+		totalDamageGiven += res.dmg1;
+		totalDamageTaken += res.dmg2;
+		totalHealing1 += res.h1;
+		totalHealing2 += res.h2;
+		
+		var trackStats1 = [], trackStats2 = [], jamCount1 = [], jamCount2 = [], trackDamage1 = [], trackDamage2 = [], trackHeal1 = [], trackHeal2 = [];
+		
+		if(!useWorker){
+			trackStats1 = res.currCount1;
+			trackStats2 = res.currCount2;
+			jamCount1 = res.jamCount1;
+			jamCount2 = res.jamCount2;
+			trackDamage1 = res.dmgs1;
+			trackDamage2 = res.dmgs2;
+			trackHeal1 = res.heals1;
+			trackHeal2 = res.heals2;
+		}else{
+			//deep copy
+			ress[t] = JSON.parse(JSON.stringify(res));
+		}
+		
+		if(res.dmg1 >= res.dmg2){
+			wins++;
+		}else{
+			losses++;
+		}
+		
+		if(doOutput == 1){
+			outputText += ''
+			+ "<br />\nYour Force dealt "+gmsim.roundToX(res.forcedmg1,2)
+				+ " Damage. ["+gmsim.roundToX(res.atkp,2)+"]<br />\n"
+			+ "Enemy Force dealt "+gmsim.roundToX(res.forcedmg2,2)
+				+ " Damage. ["+gmsim.roundToX(res.defp,2)+"]<br />\n"
+			+ "<br />Total Damage Dealt:<br />"
+			+ "You: "+Math.abs(res.dmg1)
+			+ ((res.dmg1 <= 0)?" heal.":" damage.")
+			+ "<br />\n"
+			+ "Enemy: "+Math.abs(res.dmg2)
+			+ ((res.dmg2 <= 0)?" heal.":" damage.")
+			+ "<br />\n"
+			+ "You "+(res.dmg1 >= res.dmg2?"Won":"Lost")+"!<br />\n";
+		}else{
+			outputText = '';
+			outputText += "Over "+rep+" trials...<br />";
+			outputText += "You: "+gmsim.roundToX(totalDamageGiven/rep, 2)+" damage (base: "+gmsim.roundToX(totalAttack/rep, 2)+") (healing: "+gmsim.roundToX(totalHealing1/rep, 2)+")<br />";
+			outputText += "Enemy: "+gmsim.roundToX(totalDamageTaken/rep, 2)+" damage (base: "+gmsim.roundToX(totalDefence/rep, 2)+") (healing: "+gmsim.roundToX(totalHealing2/rep, 2)+")<br />";
+			
+			var wr = "0:0";
+			if(wins == 0)
+				wr = "0:"+losses;
+			else if(losses == 0)
+				wr = wins+":0";
+			else
+				wr = gmsim.roundToX(wins/losses, 2)+":1";
+			outputText += "Win Ratio: "+wr+"<br />\n";
+
+			var For = "0:0";
+			if((totalDamageTaken/rep) == 0)
+				For = gmsim.roundToX((totalDamageGiven/rep), 2)+":0";
+			else
+				For = gmsim.roundToX((totalDamageGiven/rep)/(totalDamageTaken/rep), 2)+":1";
+			outputText += "Damage Ratio: "+For+"<br />\n";
+			
+			if(rep == reps){
+				if(reinf == 1){
+					if(useWorker){
+						for(var i = 0; i < threads; i++){
+							if(typeof ress[i] === 'undefined')//sometimes it is done before all the threads are even initialised
+								continue;
+							for(var s in ress[i].currCount1){
+								if(trackStats1[s] === undefined) trackStats1[s] = 0;
+								trackStats1[s] += ress[i].currCount1[s];
+							}
+							for(var s in ress[i].currCount2){
+								if(trackStats2[s] === undefined) trackStats2[s] = 0;
+								trackStats2[s] += ress[i].currCount2[s];
+							}
+						}
+					}
+					outputText += "<br />\n<h4>Reinforced</h4>";
+					outputText += "<b>Player 1 Reinforcements Chance</b><br />\n";
+					for(var s in trackStats1){
+						outputText += unitData[s]['unitName']+":"+trackStats1[s]+"/"+rep+"<br />\n"
+					}
+					outputText += "<br />\n";
+					outputText += "<b>Player 2 Reinforcements Chance</b><br />\n";
+					for(var s in trackStats2){
+						outputText += unitData[s]['unitName']+":"+trackStats2[s]+"/"+rep+"<br />\n"
+					}
+				}
+				if(jammed == 1){
+					if(useWorker){
+						for(var i = 0; i < threads; i++){
+							if(typeof ress[i] === 'undefined')//sometimes it is done before all the threads are even initialised
+								continue;
+							for(var s in ress[i].jamCount1){
+								if(jamCount1[s] === undefined) jamCount1[s] = 0;
+								jamCount1[s] += ress[i].jamCount1[s];
+							}
+							for(var s in ress[i].jamCount2){
+								if(jamCount2[s] === undefined) jamCount2[s] = 0;
+								jamCount2[s] += ress[i].jamCount2[s];
+							}
+						}
+					}
+					outputText += "<br />\n<h4>Jammed</h4>";
+					outputText += "<b>Player 1 Jammed Chance</b><br />\n";
+					for(var s in jamCount1){
+						if(jamCount1[s] != 0)
+						outputText += unitData[s]['unitName']+":"+jamCount1[s]+"/"+rep+"<br />\n"
+					}
+					outputText += "<br />\n";
+					outputText += "<b>Player 2 Jammed Chance</b><br />\n";
+					for(var s in jamCount2){
+						if(jamCount2[s] != 0)
+						outputText += unitData[s]['unitName']+":"+jamCount2[s]+"/"+rep+"<br />\n"
+					}
+				}
+				if(trackdmg == 1){
+					if(useWorker){
+						for(var i = 0; i < threads; i++){
+							if(typeof ress[i] === 'undefined')//sometimes it is done before all the threads are even initialised
+								continue;
+							for(var s in ress[i].dmgs1){
+								if(trackDamage1[s] === undefined) trackDamage1[s] = 0;
+								trackDamage1[s] += ress[i].dmgs1[s];
+							}
+							for(var s in ress[i].dmgs2){
+								if(trackDamage2[s] === undefined) trackDamage2[s] = 0;
+								trackDamage2[s] += ress[i].dmgs2[s];
+							}
+							for(var s in ress[i].heals1){
+								if(trackHeal1[s] === undefined) trackHeal1[s] = 0;
+								trackHeal1[s] += ress[i].heals1[s];
+							}
+							for(var s in ress[i].heals2){
+								if(trackHeal2[s] === undefined) trackHeal2[s] = 0;
+								trackHeal2[s] += ress[i].heals2[s];
+							}
+						}
+					}
+					outputText += "<br />\n<h4>Damage</h4>";
+					outputText += "<b>Player 1 Track Damage</b><table><thead><tr><th>Unit</th><th>dmg</th><th>heal</th></tr></thead>";
+					for(var s in trackDamage1){
+						outputText += "<tr><td>"+unitData[s]['unitName']+"</td><td>"+gmsim.roundToX(trackDamage1[s]/rep,2)+"</td><td>"+gmsim.roundToX(trackHeal1[s]/rep,2)+"</td></tr>";
+					}
+					outputText += "</tbody></table><br />\n";
+					
+					outputText += "<b>Player 2 Track Damage</b><table><thead><tr><th>Unit</th><th>dmg</th><th>heal</th></tr></thead>";
+					for(var s in trackDamage2){
+						outputText += "<tr><td>"+unitData[s]['unitName']+"</td><td>"+gmsim.roundToX(trackDamage2[s]/rep,2)+"</td><td>"+gmsim.roundToX(trackHeal2[s]/rep,2)+"</td></tr>";
+					}
+					outputText += "</tbody></table><br />\n";
+				}
+				
+			}
+		}
+		outputText = "(" + ((new Date())-stime) + " ms) " + outputText;
+		if(rep < reps){
+			if(useWorker){
+				if((rep % 10) == 0) document.getElementById("logarea").innerHTML = outputText;
+				BATTLE(t);
+			}else{
+				timeout = window.setTimeout(function(){BATTLE();}, 1);
+				document.getElementById("logarea").innerHTML = outputText;
+			}
+		}else{
+			document.getElementById("logarea").innerHTML = outputText;
+		}
+
+	}
+	
+}
+</script>
+	<script type='text/javascript' src='gmsim.main.js'></script>
+	<script type='text/javascript' src='gmsim.player.js'></script>
+	<script type='text/javascript' src='gmsim.unit.js'></script>
+	<script type='text/javascript' src='gmsim.ability.js'></script>
+	<script type='text/javascript' src='data/simdata.js'></script>
+	
+</head>
+<body>
+	<form id='theform'>
+		<label for='force1'>Attacking Force:</label><br />
+			<textarea name='force1' cols='50' rows='2' id='force1'>1,111,1061,1053,1058,1063,1062,1046,1071,1080,1072,1075,1083,1064,1076,1078,2532,2707,2707,2636,2536,2153,2018,2508,2014,2502,2044,2183,2543,2628,2614,2618,2557,2635,2656,2609,2701,2702,2619,2631,2655,2621,2623,2563,2657,2177,2561,2639,2617,2620,2663,2626,2640,2555,2708,2103,4034,4034,4034,4033,4017,4027,4110,4042,4111,4057,4104,4027,4027,4051,4061,4056,4026,4052,5005,9006,755,759,2604,2601,2031,2705,2519,2009,2509,2566,2644,2606,2634,2654,2176,2613,4045,1067,2611,1070,1052,1037,2632,2630,4018,1043,2158,2173,2557,1079,4053,4038,2526,2625,2546,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,</textarea><br />
+		<label for='power1'>Attack Power:</label>
+			<input name='power1' value='1000000' id='power1'></input><br /><br />
+		
+		<label for='force2'>Defending Force:</label><br />
+			<textarea name='force2' cols='50' rows='2' id='force2'>1,111,1061,1053,1058,1063,1062,1046,1071,1080,1072,1075,1083,1065,1076,1078,2532,2532,2707,2707,2536,2625,2632,2508,2014,2182,2183,2044,2182,2094,2614,2618,2403,2635,2656,2609,2701,2702,2619,2631,2655,2621,2563,2623,2657,2177,2561,2639,2617,2620,2663,2626,2640,2555,2604,2103,4041,4112,4112,4033,4017,4027,4110,4042,4111,4057,4104,4027,4027,4051,4061,4056,4026,4052,5005,9006,755,759,2708,2601,2610,2705,2519,2509,2566,2644,2606,2634,2654,2176,2613,4045,1067,2611,1070,1052,1037,2632,2630,4018,1043,2158,2173,2182,1079,4053,4038,2526,2625,2546,2557,</textarea><br />
+		<label for='power2'>Defense Power (default: 1,000,000):</label>
+			<input name='power2' value='1,000,000' id='power2'></input><br />
+		<label for='deflvl'>Defender Level (default: 89.77):</label>
+			<input name='deflvl' value='89.77' id='deflvl'></input><br /><br />
+		
+		<table style='margin:0;'><tr><td style='border-left: 1px solid black;'>
+			<input type='radio' name='doavg' value='no' checked onClick='doMulti()' id='doavgs'></input>
+			<label for='doavgs'>Single Battle</label> <br />
+			<input type='radio' name='doavg' value='yes' onClick='doMulti()' id='doavgm'></input>
+			<label for='doavgm'>Multi Battle Average</label>
+		</td><td style='border-left: 1px solid black;'>
+			<input type='radio' name='mode' value='p' checked onClick=0 id='pvp'></input>
+			<label for='pvp'>PvP</label><br />
+			<input type='radio' name='mode' value='e' onClick=0 id='epic'></input>
+			<label for='epic'>Epic</label>
+		</td>
+		</tr></table>
+		
+		<div class='multionly'><br />
+			<input type='radio' name='reps' value='ten' checked onClick=0 id='ten'></input>
+			<label for='ten'>10 battles</label><br />
+			<input type='radio' name='reps' value='hundred' onClick=0 id='hundred'></input>
+			<label for='hundred'>100 battles</label><br />
+			<input type='radio' name='reps' value='thousand' onClick=0 id='thousand'></input>
+			<label for='thousand'>1000 battles</label>
+			<br /><br />
+			<input type='radio' name='useworker' value='yes' checked onClick='doMulti()' id='useworkery'></input>
+			<label for='useworkery'>Multi-thread</label> <br />
+			<input type='radio' name='useworker' value='no' onClick='doMulti()' id='useworkern'></input>
+			<label for='useworkern'>Single-thread</label>
+			<br /><br />
+			<label for='maxthreads'>Max Threads:</label>
+			<input name='maxthreads' value='5' id='maxthreads'></input>
+			<br /><br />
+			<input type="checkbox" name="reinf" value="Yes" id="reinf" onclick=""><label for='reinf'>Show Reinforcement Rates</label><br />
+			<input type="checkbox" name="jams" value="Yes" id="jams" onclick=""><label for='jams'>Show Jam Rates</label><br />
+			<input type="checkbox" name="dmgs" value="Yes" id="dmgs" onclick=""><label for='dmgs'>Show average damage per battle</label><br />
+		</div>
+		<input value='Battle!' type='button' onClick='run(this.form)'></input>
+		
+	</form>
+	
+	<div id='logarea'></div>
+	
+	<script type='text/javascript'>
+	function toggleVisible(el){
+		var e = document.getElementById(el);
+		if(e.style.display == 'none')
+			e.style.display = 'inline';
+		else
+			e.style.display = 'none';
+	}
+	function doMulti(){
+		var mo = document.getElementsByClassName('multionly');
+		if(document.getElementById('doavgm').checked){
+			for(var i = 0; i < mo.length; i++)
+				mo[i].style.display = 'inline';
+		}else{
+			for(var i = 0; i < mo.length; i++)
+				mo[i].style.display = 'none';
+		}
+	}
+	doMulti();
+	</script>
+</body>
+</html>
