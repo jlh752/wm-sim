@@ -3,9 +3,9 @@ War Metal Battle Simulator
 
 The War Metal Battle Simulator runs simulations of [War Metal] (http://synapse-games.com/games/warmetal/) battles and outputs relevant statistics. Use it to check your average damage, test your reinforcement flow, fine-tune your unit ordering, etc.
 
-###Usage
+##Usage
 
-##Non-Web Worker
+###Non-Web Worker
 
 Include the script files on your webpage (you will probably want to concatenate the files to speed up loading).
 
@@ -17,7 +17,7 @@ Include the script files on your webpage (you will probably want to concatenate 
 <script type='text/javascript' src='data/simdata.js'></script>
 ```
 
-!Even if you are intending to use the Web Worker version you should include the files in this way so the browser has them cached. Without doing this, it may take a few seconds to redownload these files every time the script runs.
+>Even if you are intending to use the Web Worker version you should include the files in this way so the browser has them cached. Without doing this, it may take a few seconds to redownload these files every time the script runs.
 
 From there, you can run it by instantiating an instance of gmsim.battleRunner
 
@@ -58,7 +58,7 @@ Possible contents of the results structure are:
 * `heals1` - collection of average healing for specific units for attacking player
 * `heals2` - collection of average healing for specific units for defending player
 
-##Web Worker
+###Web Worker
 
 A web worker is some JavaScript that is run in a seperate processing thread than the main page. By taking advantage of web workers, we can run multiple instances of the simulator in parallel to reduce the overall execution time. First initialise the web worker like you ususally would.
 
@@ -110,8 +110,10 @@ workers[i].addEventListener('message', (function(a){ return function(e) {
 };})(i), false);
 ```
 
-###Inputs
+##Inputs
 
 The format for a force code is
 `<int version number>,<int formation id>,<int unit id>...,<int boost id>,...<int unit id>`
-where all the units after the boosts are reinforcements. a number less than 10 in a unit slot is ignored
+where all the units after the boosts are reinforcements. a number less than 10 in a unit slot is ignored.
+
+Rather than creating this by hand, you can use a [drag-and-drop tool] (http://greymarch.x10.mx/force_ed.php).
