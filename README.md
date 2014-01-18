@@ -3,6 +3,9 @@ War Metal Battle Simulator
 
 The War Metal Battle Simulator runs simulations of [War Metal] (http://synapse-games.com/games/warmetal/) battles and outputs relevant statistics. Use it to check your average damage, test your reinforcement flow, fine-tune your unit ordering, etc.
 
+* [demo epic boss simulator] (http://greymarch.x10.mx/e_sim.php)
+* [demo pvp simulator] (http://greymarch.x10.mx/b_sim.php)
+
 ##Usage
 
 ###Non-Web Worker
