@@ -116,4 +116,4 @@ The format for a force code is
 `<int version number>,<int formation id>,<int unit id>...,<int boost id>,...<int unit id>`
 where all the units after the boosts are reinforcements. a number less than 10 in a unit slot is ignored.
 
-Rather than creating this by hand, you can use a [drag-and-drop tool] (http://greymarch.x10.mx/force_ed.php).
+Rather than creating this by hand, you can use a [drag-and-drop tool] (https://github.com/jlh752/wm-force-editor).
