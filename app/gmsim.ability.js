@@ -776,10 +776,10 @@ gmsim.Ability.prototype.abilities['DH'] = function(args){
 	var mmax = dmg+dmg/2;
 	dmg = 0;
 	
-	var heal = this.other.getTotalHeal();
+	var heal = this.owner.getTotalHeal();
 	dmg = (gmsim.rand(mmin*1000, mmax*1000)/1000)*heal;
-if(this.p[2] !== '' && this.runner.epicMode != 1)//capped damage
-		dmg = Math.min(parseFloat(this.p[2]), dmg);
+//if(this.p[2] !== '' && this.runner.epicMode != 1)//capped damage
+//		dmg = Math.min(parseFloat(this.p[2]), dmg);
 	return{'damage':dmg, 'healing':0, 'output':''};
 };
 
