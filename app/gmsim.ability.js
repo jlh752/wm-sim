@@ -85,6 +85,7 @@ gmsim.Ability.prototype.parse = function(player){
 				case "HJ":
 				case "UA":
 				case "UD":
+				case "DH":
 					queue = gmsim.PHASE_TAG.MAIN;
 					break;
 					
@@ -94,9 +95,9 @@ gmsim.Ability.prototype.parse = function(player){
 						queue = gmsim.PHASE_TAG.MAIN;
 					break;
 					
-				case "DH":
-					queue = gmsim.PHASE_TAG.POST;
-					break;
+				//case "DH":			
+				//	queue = gmsim.PHASE_TAG.POST;
+				//	break;
 			}
 			if(queue != gmsim.PHASE_TAG.NONE)
 				this.phase_queues[queue].push(a);
@@ -776,7 +777,7 @@ gmsim.Ability.prototype.abilities['DH'] = function(args){
 	
 	var heal = this.other.getTotalHeal();
 	dmg = (gmsim.rand(mmin*1000, mmax*1000)/1000)*heal;
-if(this.p[2] !== '')//capped damage
+if(this.p[2] !== '' && this.runner.epicMode != 1)//capped damage
 		dmg = Math.min(parseFloat(this.p[2]), dmg);
 	return{'damage':dmg, 'healing':0, 'output':''};
 };
