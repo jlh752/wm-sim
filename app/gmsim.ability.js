@@ -319,26 +319,27 @@ gmsim.Ability.prototype.abilities['C'] = function(args){
 			targets[iid] = gmsim.unitData[iid]['unitPriority'];
 		}
 	}
-	
+	var o = '';
 	//sort the list of candidates by their control order (unit priority DESC -> unit id ASC)
 	var rv = [];
 	for(var k in targets){
 		rv.push({
-			key: k,
-			value:  targets[k]
+			key: parseInt(k),
+			value:  parseInt(targets[k])
 		});
 	}
 	rv.sort(
 		function(a,b){
 			if(a.value == b.value)
-				return a.key > b.key;
+				return a.key - b.key;
 			else
-				return a.value < b.value;
+				return b.value - a.value;
 		}
 	);
-	var o = '';
+	
+
 	//go through the list of candidates
-	for(var curr in rv){
+	for(var curr = 0, n = rv.length; curr < n; curr++){
 		controls--;
 		if(this.other.getPreventControls() == 0){
 			//completed a controller
