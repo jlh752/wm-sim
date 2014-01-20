@@ -290,11 +290,11 @@ gmsim.Ability.prototype.abilities['J'] = function(args){
 					this.other.jamCount[eid]++;
 					s = this.other.removeUnit(eid);
 					jammed = 1;
-					o = this.prefix+ " "+gmsim.unitData[this.unitId]['unitName']+" jammed "+gmsim.unitData[eid]['unitName']+"<br />\n";
+					o += this.prefix+ " "+gmsim.unitData[this.unitId]['unitName']+" jammed "+gmsim.unitData[eid]['unitName']+"<br />\n";
 					this.other.jammed++;
 				}else{
 					this.other.preventJams--;
-					o = this.prefix+" "+gmsim.unitData[this.unitId]['unitName']+"'s Jam against "+gmsim.unitData[eid]['unitName']+" was prevented<br />\n";
+					o += this.prefix+" "+gmsim.unitData[this.unitId]['unitName']+"'s Jam against "+gmsim.unitData[eid]['unitName']+" was prevented<br />\n";
 				}
 				jams--;
 			}
