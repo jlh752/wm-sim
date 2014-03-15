@@ -915,24 +915,16 @@ describe('Simulator', function(){
 			//betrach
 			//attalia 20
 			runner = new gmsim.battleRunner(merge(def, {
-				"force1": "1,81,2665,0,0",
-				"force2": "1,81,1052,0,0",
+				"force1": "1,81,1052,2665,0,0",
+				"force2": "1,81,0,0",
 				"defenderLevel": 89.77
 			}));
 			var res = runner.battle();
-			expect(res.dmg1).toEqual(-20+gmsim.roundHalfOdd(20*0.375));
+			expect(res.dmg1).toEqual(gmsim.roundHalfOdd(20*0.375));
 		});
-		it('damage for each point of enemy healing capped', function(){
-			//betrach
-			//attalia 20
-			runner = new gmsim.battleRunner(merge(def, {
-				"force1": "1,81,2665,0,0",
-				"force2": "1,81,1052,1052,1052,1052,1052,1052,1052,1052,0,0",
-				"defenderLevel": 89.77
-			}));
-			var res = runner.battle();
-			expect(res.dmg1).toEqual(-20*8+gmsim.roundHalfOdd(30));
-		});
+		/*it('damage for each point of enemy healing capped', function(){
+			//cap not working in real war metal, so ignore this for now
+		});*/
 		
 		//DB
 		/*"Boosts to the same class are added together, for example a 50% boost and a 25% boost will result in a 75% boost. This is most evident when observing the Sentinel Cannons in Sentinel Undying; their base damage is 10-30 and if you let all 12 whips boost them by 50% each, their range will be 70-210 (700% of the base damage range). - http://greymarch.x10.mx/numbers.php"*/

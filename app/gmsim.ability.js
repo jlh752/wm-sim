@@ -85,6 +85,7 @@ gmsim.Ability.prototype.parse = function(player){
 				case "HJ":
 				case "UA":
 				case "UD":
+				case "DH":
 					queue = gmsim.PHASE_TAG.MAIN;
 					break;
 					
@@ -94,9 +95,9 @@ gmsim.Ability.prototype.parse = function(player){
 						queue = gmsim.PHASE_TAG.MAIN;
 					break;
 					
-				case "DH":
-					queue = gmsim.PHASE_TAG.POST;
-					break;
+				//case "DH":			
+				//	queue = gmsim.PHASE_TAG.POST;
+				//	break;
 			}
 			if(queue != gmsim.PHASE_TAG.NONE)
 				this.phase_queues[queue].push(a);
@@ -289,11 +290,11 @@ gmsim.Ability.prototype.abilities['J'] = function(args){
 					this.other.jamCount[eid]++;
 					s = this.other.removeUnit(eid);
 					jammed = 1;
-					o = this.prefix+ " "+gmsim.unitData[this.unitId]['unitName']+" jammed "+gmsim.unitData[eid]['unitName']+"<br />\n";
+					o += this.prefix+ " "+gmsim.unitData[this.unitId]['unitName']+" jammed "+gmsim.unitData[eid]['unitName']+"<br />\n";
 					this.other.jammed++;
 				}else{
 					this.other.preventJams--;
-					o = this.prefix+" "+gmsim.unitData[this.unitId]['unitName']+"'s Jam against "+gmsim.unitData[eid]['unitName']+" was prevented<br />\n";
+					o += this.prefix+" "+gmsim.unitData[this.unitId]['unitName']+"'s Jam against "+gmsim.unitData[eid]['unitName']+" was prevented<br />\n";
 				}
 				jams--;
 			}
@@ -318,26 +319,27 @@ gmsim.Ability.prototype.abilities['C'] = function(args){
 			targets[iid] = gmsim.unitData[iid]['unitPriority'];
 		}
 	}
-	
+	var o = '';
 	//sort the list of candidates by their control order (unit priority DESC -> unit id ASC)
 	var rv = [];
 	for(var k in targets){
 		rv.push({
-			key: k,
-			value:  targets[k]
+			key: parseInt(k),
+			value:  parseInt(targets[k])
 		});
 	}
 	rv.sort(
 		function(a,b){
 			if(a.value == b.value)
-				return a.key > b.key;
+				return a.key - b.key;
 			else
-				return a.value < b.value;
+				return b.value - a.value;
 		}
 	);
-	var o = '';
+	
+
 	//go through the list of candidates
-	for(var curr in rv){
+	for(var curr = 0, n = rv.length; curr < n; curr++){
 		controls--;
 		if(this.other.getPreventControls() == 0){
 			//completed a controller
@@ -779,10 +781,10 @@ gmsim.Ability.prototype.abilities['DH'] = function(args){
 	var mmax = dmg+dmg/2;
 	dmg = 0;
 	
-	var heal = this.other.getTotalHeal();
+	var heal = this.owner.getTotalHeal();
 	dmg = (gmsim.rand(mmin*1000, mmax*1000)/1000)*heal;
-if(this.p[2] !== '')//capped damage
-		dmg = Math.min(parseFloat(this.p[2]), dmg);
+//if(this.p[2] !== '' && this.runner.epicMode != 1)//capped damage
+//		dmg = Math.min(parseFloat(this.p[2]), dmg);
 	return{'damage':dmg, 'healing':0, 'output':''};
 };
 
