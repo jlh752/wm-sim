@@ -345,6 +345,10 @@ gmsim.Ability.prototype.abilities['C'] = function(args){
 			//add it to our force, all parsing should already be complete
 			var c = this.other.removeUnit(rv[curr].key);
 			if(c != null){
+				if(typeof this.other.contCount[c.getID()] === "undefined")
+					this.other.contCount[c.getID()] = 1;
+				else
+					this.other.contCount[c.getID()]++;
 				c.setReinforced(1);
 				this.owner.addUnit(c);
 				o += this.prefix+" ";
@@ -535,6 +539,7 @@ gmsim.Ability.prototype.abilities['S'] = function(args){
 	//set the stats if not already done
 	if(typeof this.owner.jamCount[nid] === 'undefined'){
 		this.owner.jamCount[nid] = 0;
+		this.owner.contCount[nid] = 0;
 		this.owner.reinfEntered[nid] = 0;
 		this.owner.trackDamage[nid] = 0;
 		this.owner.trackHeal[nid] = 0;

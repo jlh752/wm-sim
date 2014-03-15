@@ -45,6 +45,7 @@ function run(form){
 	var reinf = form.reinf.checked;
 	var trackdmg = form.dmgs.checked;
 	var jammed = form.jams.checked;
+	var controlled = form.controls.checked;
 	
 	var repetitions = 10;
 	if(form.reps[0].checked)repetitions = 10; else
@@ -63,6 +64,8 @@ function run(form){
 	var trackStats2 = {};
 	var jamCount1 = {};
 	var jamCount2 = {};
+	var contCount1 = {};
+	var contCount2 = {};
 	var trackDamage1 = {};
 	var trackDamage2 = {};
 	var trackHeal1 = {};
@@ -79,7 +82,7 @@ function run(form){
 		threads = 1;
 	}
 	
-	if(typeof(Worker)!=="undefined") useWorker = form.useworker[0].checked;//useWorker = false;
+	if(typeof(Worker)!=="undefined") useWorker = form.useworker[0].checked;useWorker = false;
 	
 	var stime = new Date();
 	
@@ -139,7 +142,7 @@ function run(form){
 				'power2': p2,
 				'defenderLevel': lvl,
 				'doOutput': doOutput,
-				'url': url,
+				'url': url+"js/",
 				'simdata': 'data/simdata.js'//unfortunately, we can only pass string into the worker, so we need to do this instead
 			});
 		}
@@ -166,13 +169,15 @@ function run(form){
 		totalHealing1 += res.h1;
 		totalHealing2 += res.h2;
 		
-		var trackStats1 = [], trackStats2 = [], jamCount1 = [], jamCount2 = [], trackDamage1 = [], trackDamage2 = [], trackHeal1 = [], trackHeal2 = [];
+		var trackStats1 = [], trackStats2 = [], jamCount1 = [], jamCount2 = [], contCount1 = [], contCount2 = [], trackDamage1 = [], trackDamage2 = [], trackHeal1 = [], trackHeal2 = [];
 		
 		if(!useWorker){
 			trackStats1 = res.currCount1;
 			trackStats2 = res.currCount2;
 			jamCount1 = res.jamCount1;
 			jamCount2 = res.jamCount2;
+			contCount1 = res.contCount1;
+			contCount2 = res.contCount2;
 			trackDamage1 = res.dmgs1;
 			trackDamage2 = res.dmgs2;
 			trackHeal1 = res.heals1;
@@ -277,6 +282,34 @@ function run(form){
 					for(var s in jamCount2){
 						if(jamCount2[s] != 0)
 						outputText += unitData[s]['unitName']+":"+jamCount2[s]+"/"+rep+"<br />\n"
+					}
+				}
+				if(controlled == 1){
+					if(useWorker){
+						for(var i = 0; i < threads; i++){
+							if(typeof ress[i] === 'undefined')//sometimes it is done before all the threads are even initialised
+								continue;
+							for(var s in ress[i].contCount1){
+								if(contCount1[s] === undefined) contCount1[s] = 0;
+								contCount1[s] += ress[i].contCount1[s];
+							}
+							for(var s in ress[i].contCount2){
+								if(contCount2[s] === undefined) contCount2[s] = 0;
+								contCount2[s] += ress[i].contCount2[s];
+							}
+						}
+					}
+					outputText += "<br />\n<h4>Controlled</h4>";
+					outputText += "<b>Player 1 Controlled Chance</b><br />\n";
+					for(var s in contCount1){
+						if(contCount1[s] != 0)
+						outputText += unitData[s]['unitName']+":"+contCount1[s]+"/"+rep+"<br />\n"
+					}
+					outputText += "<br />\n";
+					outputText += "<b>Player 2 Controlled Chance</b><br />\n";
+					for(var s in contCount2){
+						if(contCount2[s] != 0)
+						outputText += unitData[s]['unitName']+":"+contCount2[s]+"/"+rep+"<br />\n"
 					}
 				}
 				if(trackdmg == 1){
@@ -387,6 +420,7 @@ function run(form){
 			<br /><br />
 			<input type="checkbox" name="reinf" value="Yes" id="reinf" onclick=""><label for='reinf'>Show Reinforcement Rates</label><br />
 			<input type="checkbox" name="jams" value="Yes" id="jams" onclick=""><label for='jams'>Show Jam Rates</label><br />
+			<input type="checkbox" name="controls" value="Yes" id="controls" onclick=""><label for='controls'>Show Control Rates</label><br />
 			<input type="checkbox" name="dmgs" value="Yes" id="dmgs" onclick=""><label for='dmgs'>Show average damage per battle</label><br />
 		</div>
 		<input value='Battle!' type='button' onClick='run(this.form)'></input>

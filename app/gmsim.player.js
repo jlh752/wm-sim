@@ -10,6 +10,7 @@ gmsim.Player = function(){
 	//stat tracking
 	this.reinfEntered = {};
 	this.jamCount = {};
+	this.contCount = {};
 	this.trackDamage = {};
 	this.trackHeal = {};
 	
@@ -70,6 +71,11 @@ gmsim.Player.prototype.initStats = function(){
 	if(Object.keys(this.jamCount).length == 0){
 		for(var p in this.force){
 			this.jamCount[this.force[p].getID()] = 0;
+		}
+	}
+	if(Object.keys(this.contCount).length == 0){
+		for(var p in this.force){
+			this.contCount[this.force[p].getID()] = 0;
 		}
 	}
 }
