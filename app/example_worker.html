@@ -82,7 +82,7 @@ function run(form){
 		threads = 1;
 	}
 	
-	if(typeof(Worker)!=="undefined") useWorker = form.useworker[0].checked;useWorker = false;
+	if(typeof(Worker)!=="undefined") useWorker = form.useworker[0].checked;//useWorker = false;
 	
 	var stime = new Date();
 	
@@ -142,7 +142,7 @@ function run(form){
 				'power2': p2,
 				'defenderLevel': lvl,
 				'doOutput': doOutput,
-				'url': url+"js/",
+				'url': url+"",
 				'simdata': 'data/simdata.js'//unfortunately, we can only pass string into the worker, so we need to do this instead
 			});
 		}
