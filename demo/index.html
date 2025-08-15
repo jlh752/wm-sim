@@ -3,10 +3,3761 @@
 <head>
     <meta charset="UTF-8" />
     <title>wm-sim</title>
-    </head>
-<body>
-    <div id="app"></div>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        #app {
+            margin: 20px;
+        }
+        label{
+            display: block;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 8px 0px 20px;
+            outline-color: black;
+        }
+        datalist {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            writing-mode: vertical-lr;
+            width: 100%;
+        }
+
+        datalist option {
+            padding: 0;
+        }
+
+        input[type="range"] {
+            margin: 0;
+        }
+
+        .row{
+            padding: 1em;
+            display: flex;
+        }
+        .column {
+            vertical-align: top;
+            flex: 1;
+        }
+        .column:last-child:not(:first-child){
+            margin-left: 1em;
+            padding-left: 1em;
+            border-left: 1px solid #ccc;
+        }
+        @media (max-width: 600px) {
+            .row {
+                flex-direction: column;
+            }
+            .column {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                border-left: none !important;
+            }
+        }
+details{font-size: .825em;
+  padding: 0 1.25em;
+  border-radius: .25em;display:block;
+  margin-block: 2em;}
+  details[open] {
+  background: #ccc;
+  padding: 0 1.25em 1.25em;
+}
+        summary{
+  padding: .375em 1em;display: list-item;
+  background: #CCC;
+  border-radius: .25em;
+  margin: 0 -1.25em;cursor:pointer;
+  letter-spacing: .05ch;}
+  details[open] summary {
+  border-radius: .25em .25em 0 0;
+}
+    </style>
     <script type="module" src="/main.ts"></script>
-    <select id="boss-select" is="boss-select" data-file="bosses.json"></select>
+    <link rel="preload" href="/simdata.json" as="fetch" crossorigin>
+</head>
+<body>
+    <form id="battle-config">
+        <details open>
+            <summary><h2 style="display: inline-block; margin:0">Configuration</h2></summary>
+            <div class="row">
+                <div class="column">
+                    <label for='mode-switch' style="display:inline-block">Battle type:</label>
+                    <toggle-switch id="mode-switch" name="mode-switch" pre-label="Boss" post-label="PvP"></toggle-switch>
+                    <br />
+                    <label for='single-switch' style="display:inline-block">Repetitions:</label>
+                    <toggle-switch id="single-switch" name="single-switch"  pre-label="Single" post-label="Multi"></toggle-switch>
+                    <br />
+                    <input type="range" id="repetitions-slider" name="repetitions-slider" min="1" max="1000" value="1" list="repetitions-list" />
+                    <datalist id="repetitions-list">
+                        <option value="1" label="1"></option>
+                        <option value="250" label="250"></option>
+                        <option value="500" label="500"></option>
+                        <option value="750" label="750"></option>
+                        <option value="1000" label="1000"></option>
+                    </datalist>
+                    <label for='stat-switch' style="display:inline-block">Stacking tracking:</label>
+                    <toggle-switch checked id="stat-switch" name="stat-switch"  pre-label="No" post-label="Yes"></toggle-switch>
+                    <br />
+                    <label for='threads'>Threads (default: 5):</label>
+                    <input type="number" id="threads" name="threads" value="5" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="column">
+                    <h2>Attacker</h2>
+                    <label for='force1'>Attacking Force:</label>
+                    <textarea id="force1" placeholder="Enter force data here...">1,53,1053,1046,1054,1071,1032,1067,1057,1058,2536,2545,2545,2545,2545,2545,2545,2545,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2510,2510,2510,2562,2563,4059,4059,4059,4059,4051,4054,4050,4057,4052,4045,0,0,2526,2190,2559,</textarea>
+                    <br />
+                    <label for='power1'>Attack Power (default: 1,000,000):</label>
+                    <input type="number" id="power1" name="power1" placeholder="Enter attack power value..." value="1000000" />
+                </div>
+                <div class="column">
+                    <h2>Defender</h2>
+                    <label for='boss-select'>Use boss preset:</label>
+                    <select id="boss-select" name="boss-select" is="boss-select" data-file="bosses.json"></select>
+                    <br />
+                    <label for='force2'>Defending Force:</label>
+                    <textarea id="force2" name="force2" placeholder="Enter force data here..."></textarea>
+                    <br />
+                    <label for='power2'>Defense Power (default: 1,000,000):</label>
+                    <input type="number" id="power2" name="power2" placeholder="Enter defence power value..." value="1000000" />
+                    <br />
+                    <label for='level'>Defender Level (default: 89.77):</label>
+                    <input type="number" id="level" name="level" placeholder="Enter defender level value..." value="89.77" step="any" />
+                    <input type="hidden" id="reinforcementConstraints" name="reinforcementConstraints" value="" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="column">
+                    <label for="progress-bar">Battles Progress</label>
+                    <progress value="0" max="1000" id="progress-bar"></progress>
+
+                    <button type="submit" id="battle">Battle</button>
+                </div>
+            </div>
+        </details>
+    </form>
+    <script>
+        const xmlString = `<root>
+	<skill>
+		<skill_id>1</skill_id>
+		<name>Rally Cry</name>
+		<description>Rally troops and regain health</description>
+		<heal>3</heal>
+	</skill>
+	<skill>
+		<skill_id>2</skill_id>
+		<name>Barrage</name>
+		<description>Launch a barrage of missiles at an enemy Force</description>
+		<damage>2</damage>
+	</skill>
+	<skill>
+		<skill_id>3</skill_id>
+		<name>Concussive Blast</name>
+		<description>Chance to deal extra concussive damage</description>
+		<damage>3</damage>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>4</skill_id>
+		<name>Medic</name>
+		<description>Chance to heal your Force</description>
+		<heal>3</heal>
+	</skill>
+	<skill>
+		<skill_id>5</skill_id>
+		<name>Burst</name>
+		<description>Chance to deal extra explosive damage</description>
+		<damage>4</damage>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>6</skill_id>
+		<name>Trample</name>
+		<description>Crush the enemy Force</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>7</skill_id>
+		<name>Imperial Rage</name>
+		<description>Deal massive damage to the enemy Force, and heal your Force</description>
+		<damage>6</damage>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>8</skill_id>
+		<name>Ionic Blast</name>
+		<description>Deal massive damage to the enemy Force</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>9</skill_id>
+		<name>Sonic Jamming</name>
+		<description>Chance to prevent enemy Flying unit from entering battle</description>
+		<jamming>1</jamming>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>10</skill_id>
+		<name>Rapid Fire</name>
+		<description>Chance to shoot a flurry of bullets</description>
+		<damage>8</damage>
+	</skill>
+	<skill>
+		<skill_id>11</skill_id>
+		<name>Force Field</name>
+		<description>Chance to prevent enemy Armor unit from entering battle</description>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>13</skill_id>
+		<name>Vengeance</name>
+		<description>Chance to increase total Attack Power by 25%</description>
+		<attack>0.25</attack>
+	</skill>
+	<skill>
+		<skill_id>14</skill_id>
+		<name>Detonation</name>
+		<description>Chance to cause critical explosive damage</description>
+		<damage>8</damage>
+	</skill>
+	<skill>
+		<skill_id>15</skill_id>
+		<name>Electrocution</name>
+		<description>Chance to cause damage and prevent enemy Armored units from entering battle</description>
+		<damage>2</damage>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>16</skill_id>
+		<name>Inferno</name>
+		<description>Chance to cause massive damage and ground an enemy Flying unit</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>17</skill_id>
+		<name>Cover Fire</name>
+		<description>Chance to cause minor damage and increase total Attack and Defense Power by 5%</description>
+		<attack>0.05</attack>
+		<defense>0.05</defense>
+		<damage>1</damage>
+	</skill>
+	<skill>
+		<skill_id>18</skill_id>
+		<name>Plasma Shield</name>
+		<description>Chance to increase total Defense by 10%</description>
+		<defense>0.1</defense>
+	</skill>
+	<skill>
+		<skill_id>19</skill_id>
+		<name>Vaporize</name>
+		<description>Chance to cause damage and prevent enemy Infantry units from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>20</skill_id>
+		<name>Sniper Shot</name>
+		<description>Chance to cause minor damage and remove enemy Infantry unit from entering battle</description>
+		<damage>2</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>22</skill_id>
+		<name>Demolition</name>
+		<description>Chance to cause damage and prevent enemy Structure from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>23</skill_id>
+		<name>Stasis</name>
+		<description>Chance to cause damage and prevent enemy Assault unit from entering battle</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>24</skill_id>
+		<name>Flamethrower</name>
+		<description>Chance to cause fire damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>25</skill_id>
+		<name>Reinforce</name>
+		<description>Chance to bring another Commander into battle</description>
+		<reinforce>1</reinforce>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>26</skill_id>
+		<name>Backstab</name>
+		<description>Chance to prevent up to 10 points of enemy Healing during battle</description>
+		<antiheal>10</antiheal>
+	</skill>
+	<skill>
+		<skill_id>27</skill_id>
+		<name>Reconaissance</name>
+		<description>Chance to increase the Attack and Defense of Flying units by 50%</description>
+		<support_bonus>0.1</support_bonus>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>28</skill_id>
+		<name>Call to Arms</name>
+		<description>Chance to cause damage and bring another Armored unit into battle</description>
+		<damage>5</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>29</skill_id>
+		<name>Combat Sentience</name>
+		<description>Chance to increase Attack and Defense of Robotic units by 100%</description>
+		<support_bonus>0.1</support_bonus>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>30</skill_id>
+		<name>Scramble</name>
+		<description>Chance to prevent enemy Robotic unit from entering battle</description>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>31</skill_id>
+		<name>Assault</name>
+		<description>Chance to deal massive damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>32</skill_id>
+		<name>Salvation</name>
+		<description>Chance to heal critically</description>
+		<heal>8</heal>
+	</skill>
+	<skill>
+		<skill_id>33</skill_id>
+		<name>Onslaught</name>
+		<description>Chance to deal minor damage and increase the attack of Assault units by 5%</description>
+		<damage>2</damage>
+		<support_bonus>0.05</support_bonus>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>34</skill_id>
+		<name>Fortification</name>
+		<description>Chance to increase Defense by 10%</description>
+		<defense>0.1</defense>
+	</skill>
+	<skill>
+		<skill_id>35</skill_id>
+		<name>Biohazard</name>
+		<description>Chance to cause damage and reduce enemy healing</description>
+		<damage>2</damage>
+		<antiheal>10</antiheal>
+	</skill>
+	<skill>
+		<skill_id>36</skill_id>
+		<name>Incinerate</name>
+		<description>Chance to cause major damage and increase Attack by 5%</description>
+		<attack>0.05</attack>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>37</skill_id>
+		<name>Cry of Olympus</name>
+		<description>Chance to cause major damage and increase Attack by 25%</description>
+		<attack>0.25</attack>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>38</skill_id>
+		<name>Restoration</name>
+		<description>Chance to cause major healing and increase Defense by 5%</description>
+		<defense>0.05</defense>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>39</skill_id>
+		<name>Gravity Bomb</name>
+		<description>Chance to cause crippling damage</description>
+		<damage>12</damage>
+	</skill>
+	<skill>
+		<skill_id>40</skill_id>
+		<name>Bloodlust</name>
+		<description>Chance to cause major damage and prevent enemy Commander from entering battle</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>41</skill_id>
+		<name>Ion Storm</name>
+		<description>Chance to cause damage and prevent enemy Robotic unit from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>42</skill_id>
+		<name>Clinic</name>
+		<description>Chance to heal during battle</description>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>43</skill_id>
+		<name>Heavy Fire</name>
+		<description>Chance to cause major damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>44</skill_id>
+		<name>Zeal</name>
+		<description>Chance to bring another Infantry into battle and increase Infantry damage by 10%</description>
+		<reinforce>1</reinforce>
+		<support_bonus>0.1</support_bonus>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>45</skill_id>
+		<name>Chainblade</name>
+		<description>Chance to deal damage and prevent some healing</description>
+		<damage>3</damage>
+		<antiheal>6</antiheal>
+	</skill>
+	<skill>
+		<skill_id>46</skill_id>
+		<name>Rapid Deployment</name>
+		<description>Brings another Infantry into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>48</skill_id>
+		<name>Neocyte Barrier</name>
+		<description>Chance to cause damage and raise Defense by 10%</description>
+		<defense>0.1</defense>
+		<damage>2</damage>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>49</skill_id>
+		<name>Battle Roar</name>
+		<description>Chance to cause damage and increase Attack by 10%</description>
+		<attack>0.1</attack>
+		<damage>4</damage>
+		<support_bonus>0.1</support_bonus>
+	</skill>
+	<skill>
+		<skill_id>50</skill_id>
+		<name>Atomize</name>
+		<description>Chance to cause damage and prevent an Infantry from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>51</skill_id>
+		<name>Rupture</name>
+		<description>Chance to cause damage and bring another Bloodthirsty unit into battle</description>
+		<damage>5</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>52</skill_id>
+		<name>Leech</name>
+		<description>Chance to steal opponent's Health</description>
+		<damage>3</damage>
+		<heal>3</heal>
+	</skill>
+	<skill>
+		<skill_id>53</skill_id>
+		<name>Insanity</name>
+		<description>Chance to cause damage and increase Attack of Bloodthirsty units by 15%</description>
+		<damage>2</damage>
+		<support_bonus>0.15</support_bonus>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>54</skill_id>
+		<name>Siphon</name>
+		<description>Chance to steal some opponent's Health</description>
+		<damage>2</damage>
+		<heal>2</heal>
+	</skill>
+	<skill>
+		<skill_id>55</skill_id>
+		<name>Purge</name>
+		<description>Chance to cause minor healing and prevent an enemy Commander from entering battle</description>
+		<heal>4</heal>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>56</skill_id>
+		<name>Wrath</name>
+		<description>Chance to cause major damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>58</skill_id>
+		<name>Gun Hail</name>
+		<description>Chance to deal damage and increase Infantry damage by 15%</description>
+		<damage>4</damage>
+		<support_bonus>0.15</support_bonus>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>59</skill_id>
+		<name>Quake</name>
+		<description>Chance to deal damage and prevent an Assault unit from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>60</skill_id>
+		<name>Aftershock</name>
+		<description>Chance to deal damage and prevent a Structure from entering battle</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>61</skill_id>
+		<name>Gore</name>
+		<description>Chance to deal damage and bring a Flying unit into battle</description>
+		<damage>5</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>62</skill_id>
+		<name>Lunge</name>
+		<damage>10</damage>
+	</skill>
+	<skill>
+		<skill_id>63</skill_id>
+		<name>Mangle</name>
+		<damage>20</damage>
+	</skill>
+	<skill>
+		<skill_id>64</skill_id>
+		<name>Regeneration</name>
+		<heal>8</heal>
+	</skill>
+	<skill>
+		<skill_id>65</skill_id>
+		<name>Thunderous Blast</name>
+		<description>Chance to deal crippling damage</description>
+		<damage>30</damage>
+	</skill>
+	<skill>
+		<skill_id>66</skill_id>
+		<name>Gatling Blast</name>
+		<description>Chance to deal a flurry of damage</description>
+		<damage>20</damage>
+	</skill>
+	<skill>
+		<skill_id>67</skill_id>
+		<name>Nuclear Blast</name>
+		<description>Deals 10,000,000 damage</description>
+	</skill>
+	<skill>
+		<skill_id>68</skill_id>
+		<name>Cataclysm</name>
+		<description>Chance to rip the ground apart, dealing earth-shattering damage</description>
+		<damage>18</damage>
+	</skill>
+	<skill>
+		<skill_id>69</skill_id>
+		<name>Cascade Bomb</name>
+		<description>Chance to deal explosive damage</description>
+		<damage>35</damage>
+	</skill>
+	<skill>
+		<skill_id>70</skill_id>
+		<name>Hunter Missiles</name>
+		<description>Chance to deal damage and prevent an enemy Flying unit from entering battle</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>71</skill_id>
+		<name>Fearlessness</name>
+		<description>Chance to heal and prevent an enemy Xeno from entering battle</description>
+		<heal>10</heal>
+		<jamming>1</jamming>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>73</skill_id>
+		<name>Seismic Blast</name>
+		<description>Chance to deal damage and prevent an enemy Xeno from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>74</skill_id>
+		<name>Ballistic Sniper</name>
+		<description>Chance to deal damage and prevent enemy Armored unit from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>75</skill_id>
+		<name>Exogeny</name>
+		<description>Always deals damage and prevents an enemy Commander from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>1</skill_req_id>
+				<skill_id>75</skill_id>
+				<sub_type_id>4</sub_type_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>76</skill_id>
+		<name>Gun Chain</name>
+		<description>Chance to deal massive damage and prevent enemy Infantry from entering battle</description>
+		<damage>7</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>2</skill_req_id>
+				<skill_id>76</skill_id>
+				<unit_id>2017</unit_id>
+				<number>2</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>77</skill_id>
+		<name>Muscletown</name>
+		<description>Beefcake, hooah!</description>
+		<damage>500</damage>
+		<jamming>3</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>78</skill_id>
+		<name>Combat Sentience</name>
+		<description>Chance to deal massive damage and heal</description>
+		<damage>8</damage>
+		<heal>4</heal>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>4</skill_req_id>
+				<skill_id>78</skill_id>
+				<sub_type_id>4</sub_type_id>
+				<number>5</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>79</skill_id>
+		<name>Reconaissance</name>
+		<description>Chance to bring another Flying unit into battle and prevent an enemy Flying unit from entering battle</description>
+		<jamming>1</jamming>
+		<reinforce>1</reinforce>
+		<unit_subtype>2</unit_subtype>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>5</skill_req_id>
+				<skill_id>79</skill_id>
+				<sub_type_id>2</sub_type_id>
+				<number>4</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>80</skill_id>
+		<name>Triton Deep</name>
+		<description>Chance to bring an extra Naval unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>81</skill_id>
+		<name>Sabotage</name>
+		<description>Chance to prevent an enemy Naval unit from entering battle</description>
+		<jamming>1</jamming>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>82</skill_id>
+		<name>Tempest</name>
+		<description>Chance to deal massive damage and prevent an enemy Structure from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>6</skill_req_id>
+				<skill_id>82</skill_id>
+				<sub_type_id>7</sub_type_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>83</skill_id>
+		<name>Bile</name>
+		<description>Chance to leech health and prevent enemy from healing</description>
+		<damage>4</damage>
+		<heal>4</heal>
+		<antiheal>12</antiheal>
+	</skill>
+	<skill>
+		<skill_id>84</skill_id>
+		<name>Naval Dominance</name>
+		<description>Bring another Naval unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>85</skill_id>
+		<name>Torpedo</name>
+		<description>Chance to deal damage and prevent an enemy Naval unit from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>86</skill_id>
+		<name>Sky Shatter</name>
+		<description>Chance to deal massive concussive damage</description>
+		<damage>30</damage>
+	</skill>
+	<skill>
+		<skill_id>87</skill_id>
+		<name>Strike</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>88</skill_id>
+		<name>Obedience</name>
+		<description>Chance to deal massive damage and control enemy Assault unit</description>
+		<damage>10</damage>
+		<control>1</control>
+		<unit_type>2</unit_type>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>7</skill_req_id>
+				<skill_id>88</skill_id>
+				<sub_type_id>6</sub_type_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>89</skill_id>
+		<name>Thermal Seekers</name>
+		<description>Chance to deal damage for each enemy Flying unit</description>
+		<var_damage>1</var_damage>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>90</skill_id>
+		<name>Subsurface Blast</name>
+		<description>Chance to deal damage for each enemy Naval unit</description>
+		<var_damage>1</var_damage>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>91</skill_id>
+		<name>Piercing Shot</name>
+		<description>Chance to deal damage for each enemy Armored unit</description>
+		<var_damage>1</var_damage>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>92</skill_id>
+		<name>Rapid Construction</name>
+		<description>Bring another Armored unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>93</skill_id>
+		<name>Refuel</name>
+		<description>Chance to heal for each active Naval unit in your Force</description>
+		<var_heal>1.25</var_heal>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>94</skill_id>
+		<name>Tactical Advance</name>
+		<description>Chance to deal massive damage</description>
+		<damage>7</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>8</skill_req_id>
+				<skill_id>94</skill_id>
+				<sub_type_id>7</sub_type_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>95</skill_id>
+		<name>Feeding Frenzy</name>
+		<description>Chance to deal damage</description>
+		<damage>2</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>9</skill_req_id>
+				<skill_id>95</skill_id>
+				<unit_id>2159</unit_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>96</skill_id>
+		<name>System Shock</name>
+		<description>Chance to deal some damage and heal for each active Robotic unit in your Force</description>
+		<damage>2</damage>
+		<var_heal>1.25</var_heal>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>97</skill_id>
+		<name>Mine Blast</name>
+		<description>Chance to deal damage for each enemy Naval unit</description>
+		<var_damage>1</var_damage>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>98</skill_id>
+		<name>Guerilla Tactics</name>
+		<description>Chance to heal and deal major damage</description>
+		<damage>7</damage>
+		<heal>3</heal>
+	</skill>
+	<skill>
+		<skill_id>99</skill_id>
+		<name>Slaughter</name>
+		<description>Chance to deal damage for each enemy Infantry unit</description>
+		<var_damage>1</var_damage>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>100</skill_id>
+		<name>Kamikaze</name>
+		<description>Chance to deal a small amount of damage</description>
+		<damage>2</damage>
+	</skill>
+	<skill>
+		<skill_id>101</skill_id>
+		<name>Blood Schism</name>
+		<description>Chance to deal damage and to heal for each active Bloodthirsty unit</description>
+		<damage>5</damage>
+		<var_heal>1.25</var_heal>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>102</skill_id>
+		<name>Calamity</name>
+		<description>Chance to unleash a massive wave of destruction, dealing massive damage</description>
+		<damage>14</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>10</skill_req_id>
+				<skill_id>102</skill_id>
+				<sub_type_id>4</sub_type_id>
+				<number>5</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>103</skill_id>
+		<name>Rend</name>
+		<description>Chance to bring another Robotic unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>104</skill_id>
+		<name>Mounted Strike</name>
+		<description>Chance to deal major damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>105</skill_id>
+		<name>Iron Will</name>
+		<description>Chance to deal damage and prevent enemy Robotic unit from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>106</skill_id>
+		<name>Override</name>
+		<description>Remove enemy Robotic unit from battle
+</description>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>107</skill_id>
+		<name>Phase Shift</name>
+		<description>Chance to deal damage and bring another Armored unit into battle
+</description>
+		<damage>4</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>108</skill_id>
+		<name>Hammer Drop</name>
+		<description>Chance to deal damage for each enemy Structure
+</description>
+		<var_damage>1</var_damage>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>109</skill_id>
+		<name>Spitfire</name>
+		<description>Chance to deal damage and bring another Naval unit into battle</description>
+		<damage>6</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>110</skill_id>
+		<name>Heroic Resolve</name>
+		<description>Chance to deal major damage against Epic Bosses</description>
+		<epic_damage>32</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>111</skill_id>
+		<name>Pyros</name>
+		<description>Chance to deal damage
+</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>112</skill_id>
+		<name>Brotherhood</name>
+		<description>Chance to deal damage</description>
+		<damage>6</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>20</skill_req_id>
+				<skill_id>112</skill_id>
+				<unit_id>2170</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>113</skill_id>
+		<name>Torrent</name>
+		<description>Chance to deal major damage for each enemy Naval unit
+</description>
+		<var_damage>1.5</var_damage>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>114</skill_id>
+		<name>Riptide</name>
+		<description>Chance to deal crippling damage
+</description>
+		<damage>18</damage>
+	</skill>
+	<skill>
+		<skill_id>115</skill_id>
+		<name>Fusion Upgrade</name>
+		<description>Chance to deal major damage if the Poseidon is in the active Force
+</description>
+		<damage>4</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>21</skill_req_id>
+				<skill_id>115</skill_id>
+				<unit_id>2152</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>116</skill_id>
+		<name>Pinpoint</name>
+		<description>Chance to deal damage and bring another Flying unit into Battle</description>
+		<damage>4</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>117</skill_id>
+		<name>Resurrection</name>
+		<description>Regain health</description>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>118</skill_id>
+		<name>Silent Strike</name>
+		<description>Chance to deal damage and prevent enemy Commander from entering battle</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>119</skill_id>
+		<name>Bolt</name>
+		<description>Chance to deal damage and prevent enemy Armored unit from entering battle</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>120</skill_id>
+		<name>Override</name>
+		<description>Chance to remove enemy Robotic unit from battle</description>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>121</skill_id>
+		<name>Overload</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>122</skill_id>
+		<name>Shock Assault</name>
+		<description>Chance to deal major damage</description>
+		<damage>5</damage>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>123</skill_id>
+		<name>Clone</name>
+		<description>Chance to heal and bring another Infantry into battle</description>
+		<heal>8</heal>
+		<reinforce>1</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>124</skill_id>
+		<name>Dark Tempest</name>
+		<description>Chance to deal major damage against Epic Bosses</description>
+		<epic_damage>15</epic_damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>22</skill_req_id>
+				<skill_id>124</skill_id>
+				<unit_id>2174</unit_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill> 
+		<skill_id>125</skill_id>
+		<name>Shock Siege</name>
+		<description>Chance to deal minor damage against Epic Bosses</description>
+		<epic_damage>4</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>126</skill_id>
+		<name>Biotoxin</name>
+		<description>Chance to prevent some healing and jam an enemy Infantry</description>
+		<antiheal>8</antiheal>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>127</skill_id>
+		<name>Hemorrhage</name>
+		<description>Chance to prevent healing and deal damage</description>
+		<antiheal>10</antiheal>
+		<damage>3</damage>
+	</skill>
+	<skill>
+		<skill_id>128</skill_id>
+		<name>Panzerfaust</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>22</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>129</skill_id>
+		<name>Brotherhood</name>
+		<description>Chance to deal massive damage</description>
+		<damage>15</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>23</skill_req_id>
+				<skill_id>129</skill_id>
+				<unit_id>2168</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>130</skill_id>
+		<name>Xenology</name>
+		<description>Chance to deal damage and bring another Xeno unit into battle</description>
+		<damage>8</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>131</skill_id>
+		<name>Omniscience</name>
+		<description>Chance to deal massive damage and bring another Robotic unit into battle</description>
+		<damage>8</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>132</skill_id>
+		<name>Flames of Magmos</name>
+		<description>Chance to deal massive damage and spew fire, dealing extra damage against Armored units</description>
+		<damage>15</damage>
+		<var_damage>1.25</var_damage>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>133</skill_id>
+		<name>Crushing Blow</name>
+		<description>Chance to deal massive damage and prevent up to 2 enemy Structures from entering battle</description>
+		<damage>8</damage>
+		<jamming>2</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>134</skill_id>
+		<name>Frenzy</name>
+		<description>Chance to deal major damage
+</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>135</skill_id>
+		<name>Asylum</name>
+		<description>Chance to deal damage and heal for each Bloodthirsty unit
+</description>
+		<damage>5</damage>
+		<var_heal>1.5</var_heal>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>136</skill_id>
+		<name>Spinblade</name>
+		<description>Chance to deal some damage, and major damage against Epic Bosses
+</description>
+		<damage>3</damage>
+		<epic_damage>8</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>137</skill_id>
+		<name>Seraph's Shield</name>
+		<description>Chance to deal damage and increase Defense by 5%</description>
+		<defense>0.05</defense>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>138</skill_id>
+		<name>Righteous Zeal</name>
+		<description>Chance to control enemy Commander</description>
+		<control>1</control>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>139</skill_id>
+		<name>Cleansing</name>
+		<description>Chance to deal damage for each enemy Bloodthirsty unit</description>
+		<var_damage>1.5</var_damage>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>140</skill_id>
+		<name>Encapsulate</name>
+		<description>Chance to deal damage and jam enemy Structure</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>141</skill_id>
+		<name>Dark Matter</name>
+		<description>Chance to deal massive damage and prevent enemy Assault unit from entering battle</description>
+		<damage>12</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>142</skill_id>
+		<name>Blazing Edge</name>
+		<description>Chance to deal some damage and prevent up to 2 Bloodthirsty units from entering battle</description>
+		<damage>5</damage>
+		<jamming>2</jamming>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>143</skill_id>
+		<name>Conviction</name>
+		<description>Chance to heal and deal major damage</description>
+		<damage>5</damage>
+		<heal>4</heal>
+	</skill>
+	<skill>
+		<skill_id>144</skill_id>
+		<name>Sanctuary</name>
+		<description>Chance to heal and to bring another Righteous unit into battle</description>
+		<heal>8</heal>
+		<reinforce>1</reinforce>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>145</skill_id>
+		<name>Smite</name>
+		<description>Deals minor damage</description>
+		<damage>2</damage>
+	</skill>
+	<skill>
+		<skill_id>146</skill_id>
+		<name>Mindblast</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>147</skill_id>
+		<name>Gunswarm</name>
+		<description>Chance to deal major damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>148</skill_id>
+		<name>Cybernetics</name>
+		<description>Chance to deal damage and heal for each active Robotic unit</description>
+		<damage>6</damage>
+		<var_heal>1</var_heal>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>149</skill_id>
+		<name>Assemble Mech</name>
+		<description>Chance to bring two Robotic units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>150</skill_id>
+		<name>Sky Morale</name>
+		<description>Chance to increase damage from Flying units by 25%</description>
+		<support_bonus>0.25</support_bonus>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>151</skill_id>
+		<name>Launchport</name>
+		<description>Bring an extra Flying unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>152</skill_id>
+		<name>Stingshot</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>153</skill_id>
+		<name>Swarm</name>
+		<description>Chance to deal damage</description>
+		<damage>2</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>24</skill_req_id>
+				<skill_id>153</skill_id>
+				<unit_id>2195</unit_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill> 
+	<skill>
+		<skill_id>154</skill_id>
+		<name>Crack Shot</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>155</skill_id>
+		<name>Lock-on</name>
+		<description>Chance to prevent one unit from being jammed</description>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>156</skill_id>
+		<name>Iron Fist</name>
+		<description>Chance to deal damage and increase damage from Infantry units by 25%</description>
+		<damage>4</damage>
+		<support_bonus>0.25</support_bonus>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>157</skill_id>
+		<name>Immolation</name>
+		<description>Chance to deal damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>158</skill_id>
+		<name>Ignition</name>
+		<description>Chance to deal damage</description>
+		<damage>3</damage>
+		<skill_reqs>
+			<skill_req>
+				<skill_req_id>25</skill_req_id>
+				<skill_id>158</skill_id>
+				<unit_id>1041</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>159</skill_id>
+		<name>Subsurface Launch</name>
+		<description>Chance to deal damage and remove enemy Structure from battle
+</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>160</skill_id>
+		<name>Quantize</name>
+		<description>Chance to deal damage, and deal massive damage to Epic Bosses</description>
+		<damage>3</damage>
+		<epic_damage>12</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>161</skill_id>
+		<name>Spine Flurry</name>
+		<description>Chance to deal damage</description>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>162</skill_id>
+		<name>Graviton Wave</name>
+		<description>Chance to deal minor damage, and deal massive damage to Epic Bosses</description>
+		<damage>2</damage>
+		<epic_damage>15</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>163</skill_id>
+		<name>Magnetic Mind</name>
+		<description>Chance to deal damage and control an enemy Robot</description>
+		<damage>4</damage>
+		<control>1</control>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>164</skill_id>
+		<name>Xenosis</name>
+		<description>Chance to deal damage, and to heal for each Xeno unit</description>
+		<damage>6</damage>
+		<var_heal>1.5</var_heal>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>165</skill_id>
+		<name>Thorn Flurry</name>
+		<description>Chance to deal minor damage and prevent healing</description>
+		<damage>2</damage>
+		<antiheal>5</antiheal>
+	</skill>
+	<skill>
+		<skill_id>166</skill_id>
+		<name>Blood Seekers</name>
+		<description>Chance to deal damage and prevent healing</description>
+		<damage>5</damage>
+		<antiheal>4</antiheal>
+	</skill>
+	<skill>
+		<skill_id>167</skill_id>
+		<name>Devouring Mind</name>
+		<description>Chance to deal damage and control an enemy Bloodthirsty unit</description>
+		<damage>5</damage>
+		<control>1</control>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>168</skill_id>
+		<name>Dark Spawn</name>
+		<description>Brings another Bloodthirsty unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>169</skill_id>
+		<name>Blight</name>
+		<description>Chance to deal major damage and prevent two enemy Structures from entering battle</description>
+		<damage>6</damage>
+		<jamming>2</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>170</skill_id>
+		<name>Parasitic Spores</name>
+		<description>Chance to deal major damage and jam an enemy Assault unit</description>
+		<damage>8</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>171</skill_id>
+		<name>Aerial Blast</name>
+		<description>Chance to deal major damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>172</skill_id>
+		<name>Xenophase</name>
+		<description>Chance to deal minor damage and to prevent a unit from being jammed</description>
+		<damage>3</damage>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>173</skill_id>
+		<name>Rift</name>
+		<description>Brings a Xeno unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>174</skill_id>
+		<name>Blastwave</name>
+		<description>Chance to deal massive damage</description>
+		<damage>15</damage>
+	</skill>
+	<skill>
+		<skill_id>175</skill_id>
+		<name>Hacksaw</name>
+		<description>Chance to deal damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>176</skill_id>
+		<name>Terror</name>
+		<description>Chance to deal minor damage and jam an enemy Assault unit</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>177</skill_id>
+		<name>Pike Shield</name>
+		<description>Chance to deal damage</description>
+		<damage>3</damage>
+	</skill>
+	<skill>
+		<skill_id>178</skill_id>
+		<name>Bloodshot</name>
+		<description>Chance to deal minor damage and extra damage against Epic Bosses</description>
+		<damage>2</damage>
+		<epic_damage>10</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>179</skill_id>
+		<name>Blood Spawn</name>
+		<description>Chance to bring three Bloodthirsty units into battle</description>
+		<reinforce>3</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>180</skill_id>
+		<name>Assassinate</name>
+		<description>Chance to deal major damage and jam enemy Commander</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>181</skill_id>
+		<name>Bombardment</name>
+		<description>Chance to deal devastating damage</description>
+		<damage>15</damage>
+	</skill>
+	<skill>
+		<skill_id>182</skill_id>
+		<name>Gun Siege</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>20</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>183</skill_id>
+		<name>Aerial Swarm</name>
+		<description>Chance to deal major damage</description>
+		<damage>6</damage>
+		<skill_reqs>
+			<skill_req>
+				<sub_type_id>2</sub_type_id>
+				<number>3</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>184</skill_id>
+		<name>Thunderous Siege</name>
+		<description>Chance to deal a massive flurry of damage</description>
+		<damage>4.5</damage>
+		<flurry>4</flurry>
+	</skill>
+	<skill>
+		<skill_id>185</skill_id>
+		<name>Flak Burst</name>
+		<description>Chance to deal damage for each enemy Flying unit</description>
+		<var_damage>1.5</var_damage>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>186</skill_id>
+		<name>Destructive Beam</name>
+		<description>Chance to deal major damage against Epics and prevent some Healing</description>
+		<epic_damage>12</epic_damage>
+		<antiheal>8</antiheal>
+	</skill>
+	<skill>
+		<skill_id>187</skill_id>
+		<name>Forcefield</name>
+		<description>Chance to deal damage and increase Defense by 15%</description>
+		<damage>4</damage>
+		<defense>0.15</defense>
+	</skill>
+	<skill>
+		<skill_id>188</skill_id>
+		<name>Devastating Blow</name>
+		<description>Chance to deal major damage</description>
+		<damage>7</damage>
+	</skill>
+	<skill>
+		<skill_id>189</skill_id>
+		<name>Summon</name>
+		<description>Chance to deal damage and bring another Xeno unit into Battle</description>
+		<damage>4</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>190</skill_id>
+		<name>Magna-Web</name>
+		<description>Chance to deal minor damage and prevent enemy Assault unit from entering battle</description>
+		<damage>3</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>191</skill_id>
+		<name>Blood Boil</name>
+		<description>Chance to deal damage and bring a Bloodthirsty unit into battle</description>
+		<damage>5</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>192</skill_id>
+		<name>Vicious Slash</name>
+		<description>Chance to deal damage and prevent enemy Structure unit from entering battle</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>193</skill_id>
+		<name>Flurry</name>
+		<description>Chance to deal minor damage three times</description>
+		<damage>2</damage>
+		<flurry>3</flurry>
+	</skill>
+	<skill>
+		<skill_id>194</skill_id>
+		<name>Bulletstorm</name>
+		<description>Chance to deal damage three times</description>
+		<damage>3</damage>
+		<flurry>3</flurry>
+	</skill>
+	<skill>
+		<skill_id>195</skill_id>
+		<name>Stormshadow</name>
+		<description>Chance to deal damage, and deal massive damage to Epic Bosses</description>
+		<damage>3</damage>
+		<epic_damage>10</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>196</skill_id>
+		<name>Surge</name>
+		<description>Chance to deal damage and prevent 2 enemy Xenos from entering Battle</description>
+		<damage>9</damage>
+		<jamming>2</jamming>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>197</skill_id>
+		<name>Reckless Maul</name>
+		<description>Chance to deal damage and prevent some healing</description>
+		<damage>6</damage>
+		<antiheal>9</antiheal>
+	</skill>
+	<skill>
+		<skill_id>198</skill_id>
+		<name>Overdrive</name>
+		<description>Chance to deal damage and increase Attack of Robotic units by 20%</description>
+		<damage>7</damage>
+		<attack>0.20</attack>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>199</skill_id>
+		<name>Cleansing Purge</name>
+		<description>Chance to deal damage and heal for each Armored unit</description>
+		<damage>12</damage>
+		<var_heal>1.75</var_heal>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>200</skill_id>
+		<name>Gargantuan Blast</name>
+		<description>Chance to deal massive damage to epic bosses and prevent an enemy Structure from entering battle</description>
+		<epic_damage>10</epic_damage>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>201</skill_id>
+		<name>Coalescent Wail</name>
+		<description>Chance to deal flurry damage and increase damage of all Bloodthirsty units by 25%</description>
+		<damage>4</damage>
+		<flurry>2</flurry>
+		<support_bonus>0.25</support_bonus>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>202</skill_id>
+		<name>Poison Shot</name>
+		<description>Chance to deal damage and prevent an enemy Assault unit from entering battle</description>
+		<damage>7</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>203</skill_id>
+		<name>Blood Splatter</name>
+		<description>Chance to deal damage and heal your force</description>
+		<damage>8</damage>
+		<heal>12</heal>
+	</skill>
+	<skill>
+		<skill_id>204</skill_id>
+		<name>Portal Generation</name>
+		<description>Chance to deal damage and bring two Xeno units into battle</description>
+		<damage>18</damage>
+		<reinforce>2</reinforce>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>205</skill_id>
+		<name>Flank Shots</name>
+		<description>Chance to deal damage and prevent a unit from being jammed</description>
+		<damage>7</damage>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>206</skill_id>
+		<name>Sneak Attack</name>
+		<description>Chance to deal damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>207</skill_id>
+		<name>Vroom Vroom</name>
+		<description>Chance to deal damage and make one of your guys join my side!</description>
+		<control>1</control>
+		<unit_type>2</unit_type>
+		<damage>100</damage>
+		<shield>1</shield>
+		<rally>10</rally>
+	</skill>
+	<skill>
+		<skill_id>208</skill_id>
+		<name>Sanctity</name>
+		<description>Chance to bring two Righteous units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>209</skill_id>
+		<name>Redemption</name>
+		<description>Chance to do major damage and heal</description>
+		<damage>5</damage>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>210</skill_id>
+		<name>Flux Blast</name>
+		<description>Chance to do minor damage and bring another Righteous unit into battle</description>
+		<damage>3</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>211</skill_id>
+		<name>Devotion</name>
+		<description>Chance to heal a huge amount of health</description>
+		<heal>20</heal>
+	</skill>
+	<skill>
+		<skill_id>212</skill_id>
+		<name>Devastation</name>
+		<description>Chance to deal massive damage three times</description>
+		<damage>3</damage>
+		<flurry>5</flurry>
+	</skill>
+	<skill>
+		<skill_id>213</skill_id>
+		<name>Glory Shield</name>
+		<description>Chance to prevent two units from being jammed</description>
+		<antijam>2</antijam>
+	</skill>
+	<skill>
+		<skill_id>214</skill_id>
+		<name>Zealot Hammer</name>
+		<description>Chance to deal damage and jam enemy Commander</description>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>215</skill_id>
+		<name>Spineweb</name>
+		<description>Chance to deal major damage</description>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>216</skill_id>
+		<name>Rally Troops</name>
+		<description>Chance to bring four Infantry into battle</description>
+		<reinforce>4</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>217</skill_id>
+		<name>Fleet Warp</name>
+		<description>Chance to deal damage and bring two Flying units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>2</unit_subtype>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>218</skill_id>
+		<name>Xenoply</name>
+		<description>Chance to heal for each Xeno unit</description>
+		<var_heal>2</var_heal>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>219</skill_id>
+		<name>Evasion</name>
+		<description>Chance to prevent one unit from being jammed</description>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>220</skill_id>
+		<name>Meatgrinder</name>
+		<description>Chance to deal damage and jam two enemy Infantry</description>
+		<jamming>2</jamming>
+		<unit_subtype>3</unit_subtype>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>221</skill_id>
+		<name>Perimeter Defense</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>30</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>222</skill_id>
+		<name>Overload</name>
+		<description>Chance to deal major damage to you and the enemy</description>
+		<damage>25</damage>
+		<heal>-25</heal>
+	</skill>
+	<skill>
+		<skill_id>223</skill_id>
+		<name>Warp Surge</name>
+		<description>Chance to bring two Assault units into battle and prevent one of your units from being jammed</description>
+		<reinforce>2</reinforce>
+		<unit_type>2</unit_type>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>224</skill_id>
+		<name>Massive Siege</name>
+		<description>Chance to jam up to three Structures</description>
+		<jamming>3</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>225</skill_id>
+		<name>Rage Blast</name>
+		<description>Chance to jam an enemy Infantry and deal damage to Epic Bosses</description>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+		<epic_damage>8</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>226</skill_id>
+		<name>Coerce</name>
+		<description>Chance to deal damage and control enemy Infantry unit</description>
+		<control>1</control>
+		<unit_subtype>3</unit_subtype>
+		<damage>7</damage>
+	</skill>
+	<skill>
+		<skill_id>227</skill_id>
+		<name>Bloodfeast</name>
+		<description>Chance to deal damage, prevent healing, and heal</description>
+		<damage>4</damage>
+		<antiheal>4</antiheal>
+		<heal>4</heal>
+	</skill>
+	<skill>
+		<skill_id>228</skill_id>
+		<name>Bioshock</name>
+		<description>Chance to deal damage and jam a Bloodthirsty unit</description>
+		<damage>5</damage>
+		<jamming>1</jamming>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>229</skill_id>
+		<name>Spinenest</name>
+		<description>Chance to bring another Xeno unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>230</skill_id>
+		<name>Technophage</name>
+		<description>Chance to deal damage and bring two Robotic units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>4</unit_subtype>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>231</skill_id>
+		<name>Meltdown</name>
+		<description>Chance to deal damage for each enemy Robotic unit</description>
+		<var_damage>1.4</var_damage>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>232</skill_id>
+		<name>Gunrazor</name>
+		<description>Chance to deal damage and jam enemy Robotic unit</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>233</skill_id>
+		<name>Rain Bullets</name>
+		<description>Chance to deal flurry damage</description>
+		<flurry>4</flurry>
+		<damage>1</damage>
+	</skill>
+	<skill>
+		<skill_id>234</skill_id>
+		<name>Machine Vision</name>
+		<description>Chance to rally Robotic units and increase damage per attack</description>
+		<rally>1</rally>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>235</skill_id>
+		<name>Photon Barrier</name>
+		<description>Chance to reduce damage from each attack</description>
+		<shield>1</shield>
+	</skill>
+	<skill>
+		<skill_id>236</skill_id>
+		<name>Guardian Lance</name>
+		<description>Chance to deal massive damage</description>
+		<damage>14</damage>
+	</skill>
+	<skill>
+		<skill_id>237</skill_id>
+		<name>Crush Armor</name>
+		<description>Chance to deal damage and jam two Armored units</description>
+		<jamming>2</jamming>
+		<unit_subtype>1</unit_subtype>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>238</skill_id>
+		<name>Hull Pierce</name>
+		<description>Chance to deal damage and jam an Armored unit</description>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>239</skill_id>
+		<name>Orbital Defense Blast</name>
+		<description>Chance to deal major flurry damage</description>
+		<flurry>4</flurry>
+		<damage>4</damage>
+	</skill>
+	<skill>
+		<skill_id>240</skill_id>
+		<name>Engorge</name>
+		<description>Chance to deal damage and prevent enemy Infantry from entering battle</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>241</skill_id>
+		<name>Siege Shatter</name>
+		<description>Chance to deal massive flurry damage against Epic Bosses</description>
+		<flurry>3</flurry>
+		<epic_damage>6</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>242</skill_id>
+		<name>Abolish</name>
+		<description>Chance to deal major damage and jam enemy Commander</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>243</skill_id>
+		<name>Infantry Swarm</name>
+		<description>Chance to deal damage and bring another Infantry into battle</description>
+		<damage>4</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>244</skill_id>
+		<name>Enclave Schism</name>
+		<description>Chance to deal damage and rally all Xeno units</description>
+		<damage>5</damage>
+		<rally>1</rally>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>245</skill_id>
+		<name>Needle Pierce</name>
+		<description>Chance to prevent major healing and bring another Bloodthirsty unit into battle</description>
+		<antiheal>6</antiheal>
+		<reinforce>1</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>246</skill_id>
+		<name>Aerial Assault</name>
+		<description>Chance to deal flurry damage</description>
+		<damage>3</damage>
+		<flurry>3</flurry>
+	</skill>
+	<skill>
+		<skill_id>247</skill_id>
+		<name>Mortar</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>18</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>248</skill_id>
+		<name>Entrench</name>
+		<description>Chance to increase damage from Structures by 30%</description>
+		<support_bonus>0.3</support_bonus>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>249</skill_id>
+		<name>Infantry Blitz</name>
+		<description>Chance to deal damage and rally Infantry</description>
+		<damage>6</damage>
+		<rally>1</rally>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>250</skill_id>
+		<name>Xenoplasmic Blast</name>
+		<description>Chance to deal damage for each enemy Xeno unit</description>
+		<var_damage>1.5</var_damage>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>251</skill_id>
+		<name>Xeno Disruptor</name>
+		<description>Chance to jam enemy Xeno unit</description>
+		<jamming>1</jamming>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>252</skill_id>
+		<name>Sweeping Advance</name>
+		<description>Chance to jam enemy Xeno unit</description> 
+		<jamming>1</jamming>
+		<unit_subtype>6</unit_subtype>
+		
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2545</unit_id>
+				<number>5</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>253</skill_id>
+		<name>Phase Cycle</name>
+		<description>Chance to deal damage and bring another Armored unit into battle</description>
+		<damage>9</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>254</skill_id>
+		<name>Magnacrush</name>
+		<description>Chance to deal damage, and extra damage for each enemy Infantry unit</description>
+		<damage>10</damage>
+		<var_damage>1.25</var_damage>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>255</skill_id>
+		<name>XenoHunter</name>
+		<description>Chance to deal massive damage against Epic Bosses and jam an enemy Xeno unit</description>
+		<epic_damage>20</epic_damage>
+		<jamming>1</jamming>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>256</skill_id>
+		<name>Bubonic Swipe</name>
+		<description>Chance to deal major damage</description>
+		<damage>10</damage>
+	</skill>
+	<skill>
+		<skill_id>257</skill_id>
+		<name>Rancid Swipe</name>
+		<description>Chance to deal minor damage and jam up to three enemy Assault units</description>
+		<damage>3</damage>
+		<jamming>3</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>258</skill_id>
+		<name>Aerial Siege</name>
+		<description>Chance to deal damage and increase damage from each Flying attack</description>
+		<damage>10</damage>
+		<rally>1</rally>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>259</skill_id>
+		<name>Reaper Flurry</name>
+		<description>Chance to deal flurry damage</description>
+		<damage>2.5</damage>
+		<flurry>3</flurry>
+	</skill>
+	<skill>
+		<skill_id>260</skill_id>
+		<name>Reaper Flurry</name>
+		<description>Chance to deal flurry damage</description>
+		<damage>2.5</damage>
+		<flurry>3</flurry>
+	</skill>
+	<skill>
+		<skill_id>261</skill_id>
+		<name>Grounding Shot</name>
+		<description>Chance to jam an enemy Flying unit and deal massive damage against Epic Bosses</description>
+		<epic_damage>15</epic_damage>
+		<jamming>1</jamming>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>262</skill_id>
+		<name>Skyhammer</name>
+		<description>Chance to increase Flying damage by 50%</description>
+		<support_bonus>.5</support_bonus>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>263</skill_id>
+		<name>Cloud Swarm</name>
+		<description>Brings in five Flying units</description>
+		<reinforce>5</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>264</skill_id>
+		<name>Final Siege</name>
+		<description>Chance to deal massive damage, jam two enemy Assault units, bring an additional Assault unit into battle, and prevent one unit from being jammed</description>
+		<damage>15</damage>
+		<jamming>2</jamming>
+		<antijam>1</antijam>
+		<reinforce>1</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>265</skill_id>
+		<name>Mass Repair</name>
+		<description>Chance to heal massively against Epic Bosses</description>
+		<epic_heal>15</epic_heal>
+	</skill>
+	<skill>
+		<skill_id>266</skill_id>
+		<name>Purifying Blast</name>
+		<description>Chance to deal major damage for each enemy Bloodthirsty unit, and to prevent healing</description>
+		<unit_subtype>5</unit_subtype>
+		<var_damage>1.5</var_damage>
+		<antiheal>20</antiheal>
+	</skill>
+	<skill>
+		<skill_id>267</skill_id>
+		<name>Gaping Wound</name>
+		<description>Chance to deal damage and prevent major healing</description>
+		<damage>10</damage>
+		<antiheal>20</antiheal>
+	</skill>
+	<skill>
+		<skill_id>268</skill_id>
+		<name>Redemption</name>
+		<description>Chance to deal major damage and to heal</description>
+		<damage>15</damage>
+		<heal>20</heal>
+	</skill>
+	<skill>
+		<skill_id>269</skill_id>
+		<name>Twinshot</name>
+		<description>Chance to deal major damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>270</skill_id>
+		<name>Bulletrage</name>
+		<description>Chance to deal flurry damage</description>
+		<flurry>4</flurry>
+		<damage>1</damage>
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2564</unit_id>
+				<number>4</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>271</skill_id>
+		<name>Purifying Light</name>
+		<description>Chance to deal damage, and jam up to two enemy Bloodthirsty Assault units</description>
+		<damage>12</damage>
+		<unit_type>2</unit_type>
+		<unit_subtype>5</unit_subtype>
+		<jamming>2</jamming>
+	</skill>
+	<skill>
+		<skill_id>272</skill_id>
+		<name>Ancient Order</name>
+		<description>Chance to deal flurry damage</description>
+		<flurry>2</flurry>
+		<damage>3</damage>
+	</skill>
+	<skill>
+		<skill_id>273</skill_id>
+		<name>Hammer's Will</name>
+		<description>Chance to deal damage and increase Defense by 25%</description>
+		<defense>.25</defense>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>274</skill_id>
+		<name>Hardline Optimization</name>
+		<description>Chance to rally all Armored units to increase damage per attack</description>
+		<rally>2</rally>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>275</skill_id>
+		<name>Raid Assault</name>
+		<description>Chance to deal damage to Epic Bosses</description>
+		<epic_damage>14</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>276</skill_id>
+		<name>Rending Claw</name>
+		<description>Chance to deal damage and jam enemy Infantry</description>
+		<damage>8</damage>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>277</skill_id>
+		<name>Raid Siege</name>
+		<description>Chance to deal damage to Epic Bosses</description>
+		<epic_damage>35</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>278</skill_id>
+		<name>Massive Rejuvenation</name>
+		<description>Chance to cause major healing vs. Epic Bosses and prevent enemy healing</description>
+		<epic_heal>20</epic_heal>
+		<antiheal>5</antiheal>
+	</skill>
+	<skill>
+		<skill_id>279</skill_id>
+		<name>EM Overload</name>
+		<description>Chance to cause damage and jam an enemy Structure</description>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>280</skill_id>
+		<name>Last Stand</name>
+		<description>Chance to cause massive healing vs. Epic Bosses, and deal damage against Epic Bosses</description>
+		<epic_heal>40</epic_heal>
+		<epic_damage>40</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>281</skill_id>
+		<name>Hydra Shield</name>
+		<description>Chance to increase Defense by 25%</description>
+		<defense>.25</defense>
+	</skill>
+	<skill>
+		<skill_id>282</skill_id>
+		<name>Binary 0</name>
+		<description>Chance to cause minor healing and increase Defense by 5%</description>
+		<defense>.05</defense>
+		<heal>5</heal>
+	</skill>
+	<skill>
+		<skill_id>283</skill_id>
+		<name>Binary 1</name>
+		<description>Chance to cause minor damage and increase Attack by 5%</description>
+		<attack>.05</attack>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>284</skill_id>
+		<name>Ground Support</name>
+		<description>Chance to cause minor damage and increase Armored damage by 3%</description>
+		<support_bonus>.03</support_bonus>
+		<damage>5</damage>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>285</skill_id>
+		<name>Burning Zeal</name>
+		<description>Chance to increase damage from Righteous units by 25%</description>
+		<support_bonus>0.25</support_bonus>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	
+	<skill>
+		<skill_id>286</skill_id>
+		<name>Righteous Blast</name>
+		<description>Chance to cause damage and additional major damage against Epic Bosses</description>
+		<epic_damage>12</epic_damage>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>287</skill_id>
+		<name>Devastation</name>
+		<description>Chance to deal massive damage and jam an enemy Assault unit</description>
+		<damage>16</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>288</skill_id>
+		<name>Imperial Tactics</name>
+		<description>Chance to prevent healing against Epic Bosses</description>
+		<epic_antiheal>45</epic_antiheal>
+	</skill>
+	<skill>
+		<skill_id>289</skill_id>
+		<name>Bloodrazor</name>
+		<description>Chance to deal minor damage and jam a Bloodthirsty unit</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>290</skill_id>
+		<name>Naval Superiority</name>
+		<description>Chance to bring a Naval unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>291</skill_id>
+		<name>Armored Superiority</name>
+		<description>Chance to deal damage and bring in two Armored units</description>
+		<reinforce>2</reinforce>
+		<damage>5</damage>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>292</skill_id>
+		<name>Bioshards</name>
+		<description>Chance to deal damage against Epic Bosses and prevent healing against Epic Bosses</description>
+		<epic_damage>10</epic_damage>
+		<epic_antiheal>15</epic_antiheal>
+	</skill>
+	<skill>
+		<skill_id>294</skill_id>
+		<name>Healing Ray</name>
+		<description>Chance to cause massive healing</description>
+		<heal>10</heal>
+	</skill>
+	<skill>
+		<skill_id>295</skill_id>
+		<name>Negative Feedback</name>
+		<description>Chance to prevent healing against Epic Bosses</description>
+		<epic_antiheal>15</epic_antiheal>
+	</skill>
+	<skill>
+		<skill_id>296</skill_id>
+		<name>Lithid Link</name>
+		<description>Heals massively</description>
+		<heal>20</heal>
+	</skill>
+	<skill>
+		<skill_id>297</skill_id>
+		<name>Lithid Gasp</name>
+		<description>Chance to heal massively and deal massive damage</description>
+		<heal>8</heal>
+		<damage>24</damage>
+	</skill>
+	<skill>
+		<skill_id>298</skill_id>
+		<name>Homeworld Protectorate</name>
+		<description>Chance to heal for each Righteous unit, and deal damage</description>
+		<damage>10</damage>
+		<var_heal>2</var_heal>
+		<heal_cap>80</heal_cap>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>299</skill_id>
+		<name>Synthetic Override</name>
+		<description>Chance to deal massive damage and jam up to two Robotic units</description>
+		<damage>18</damage>
+		<jamming>2</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>300</skill_id>
+		<name>Magnapurge</name>
+		<description>Chance to deal damage for each enemy Robotic unit</description>
+		<var_damage>2</var_damage>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>301</skill_id>
+		<name>Drop Construction</name>
+		<description>Chance to deal damage and bring in an additional Structure</description>
+		<damage>3</damage>
+		<reinforce>1</reinforce>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>302</skill_id>
+		<name>Plaguesilt</name>
+		<description>Chance to deal damage and reduce enemy boosted Defense by 10%</description>
+		<damage>6</damage>
+		<anti_defense>.1</anti_defense>
+	</skill>
+	<skill>
+		<skill_id>304</skill_id>
+		<name>Detect Vulnerability</name>
+		<description>Chance to deal damage and reduce boosted enemy Defense by 25%</description>
+		<damage>12</damage>
+		<anti_defense>.25</anti_defense>
+	</skill>
+	<skill>
+		<skill_id>305</skill_id>
+		<name>Purge the Soulless</name>
+		<description>Chance to deal damage and jam an enemy Bloodthirsty units</description>
+		<damage>4</damage>
+		<jamming>1</jamming>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>306</skill_id>
+		<name>Death from Above</name>
+		<description>Chance to deal massive damage</description>
+		<damage>18</damage>
+	</skill>
+	<skill>
+		<skill_id>307</skill_id>
+		<name>Ambush</name>
+		<description>Chance to deal damage and bring an Assault unit into battle</description>
+		<damage>10</damage>
+		<reinforce>1</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>308</skill_id>
+		<name>High Ground</name>
+		<description>Chance to deal damage and decrease boosted enemy Attack by 25%</description>
+		<damage>10</damage>
+		<anti_attack>.25</anti_attack>
+	</skill>
+	<skill>
+		<skill_id>309</skill_id>
+		<name>Vile Rush</name>
+		<description>Chance to deal damage and jam an enemy Commander</description>
+		<damage>10</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>310</skill_id>
+		<name>Amphibiosis</name>
+		<description>Chance to bring two Naval units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>311</skill_id>
+		<name>Aerial Swarm</name>
+		<description>Chance to prevent healing against Epic Bosses and bring another Flying unit into battle</description>
+		<epic_antiheal>8</epic_antiheal>
+		<reinforce>1</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>312</skill_id>
+		<name>Purity</name>
+		<description>Chance to deal damage against Epic Bosses and jam two Bloodthirsty units</description>
+		<epic_damage>15</epic_damage>
+		<jamming>2</jamming>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>313</skill_id>
+		<name>Shining Light</name>
+		<description>Chance to deal damage against Epic Bosses</description>
+		<epic_damage>20</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>314</skill_id>
+		<name>Beacon of Hope</name>
+		<description>Chance to deal damage and bring an extra Righteous unit into battle</description>
+		<damage>4</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>315</skill_id>
+		<name>Beacon of Zeal</name>
+		<description>Chance to deal damage and bring three extra Righteous units into battle</description>
+		<damage>15</damage>
+		<reinforce>3</reinforce>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>316</skill_id>
+		<name>Hurl Scorpion</name>
+		<description>Chance to deal damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>317</skill_id>
+		<name>Mobile Siege</name>
+		<description>Chance to deal major damage and bring in two additional Structures</description>
+		<damage>12</damage>
+		<reinforce>2</reinforce>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>318</skill_id>
+		<name>Immediate Halt</name>
+		<description>Chance to deal major damage and jam an enemy Armored unit</description>
+		<damage>10</damage>
+		<jamming>1</jamming>
+		<unit_subtype>1</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>319</skill_id>
+		<name>Purge of Decay</name>
+		<description>Chance to deal damage and jam an enemy Righteous unit</description>
+		<damage>8</damage>
+		<jamming>1</jamming>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>320</skill_id>
+		<name>Quake</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>22</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>321</skill_id>
+		<name>Magneton Jam</name>
+		<description>Chance to deal damage and jam an enemy Righteous unit</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>322</skill_id>
+		<name>Anti-air Assault</name>
+		<description>Chance to deal damage for each enemy Flying unit</description>
+		<var_damage>2</var_damage>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>323</skill_id>
+		<name>Skyshards</name>
+		<description>Chance to deal massive damage</description>
+		<damage>8</damage>
+	</skill>
+	<skill>
+		<skill_id>324</skill_id>
+		<name>Leadership</name>
+		<description>Chance to deal damage and increase Commander damage by 1</description>
+		<damage>4</damage>
+		<rally>1</rally>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>325</skill_id>
+		<name>Ruthless Flank</name>
+		<description>Chance to deal damage and prevent up to two enemy reinforced units from entering battle</description>
+		<damage>6</damage>
+		<antireinforce>2</antireinforce>
+	</skill>
+	<skill>
+		<skill_id>326</skill_id>
+		<name>Rally Enclave</name>
+		<description>Chance to increase Xeno damage per attack by +1</description>
+		<rally>1</rally>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>327</skill_id>
+		<name>Mindshield</name>
+		<description>Chance to prevent one unit from being Controlled</description>
+		<anticontrol>1</anticontrol>
+	</skill>
+	<skill>
+		<skill_id>328</skill_id>
+		<name>Bloomspore</name>
+		<description>Chance to deal damage</description>
+		<damage>7</damage>
+	</skill>
+	<skill>
+		<skill_id>329</skill_id>
+		<name>Acid Trap</name>
+		<description>Chance to deal minor damage and prevent an enemy reinforced units from entering battle</description>
+		<damage>4</damage>
+		<antireinforce>1</antireinforce>
+	</skill>
+	<skill>
+		<skill_id>330</skill_id>
+		<name>Betrayal</name>
+		<description>Chance to deal damage and control an enemy Righteous unit</description>
+		<damage>10</damage>
+		<control>1</control>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>331</skill_id>
+		<name>Sentinel Lash</name>
+		<description/>
+		<damage>1</damage>
+		<support_bonus>.5</support_bonus>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>332</skill_id>
+		<name>Light Burst</name>
+		<description>Chance to massively heal and cause damage</description>
+		<damage>20</damage>
+		<heal>20</heal>
+	</skill>
+	<skill>
+		<skill_id>333</skill_id>
+		<name>Zeal's End</name>
+		<description>Chance to deal damage against Epic Bosses and jam two enemy Righteous units</description>
+		<epic_damage>25</epic_damage>
+		<jamming>2</jamming>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>334</skill_id>
+		<name>Medidrop</name>
+		<description>Chance to heal massively and bring two Infantry units into battle</description>
+		<heal>25</heal>
+		<reinforce>2</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>335</skill_id>
+		<name>Backlash</name>
+		<description>Chance to deal damage to your force for each Mind Controller in your Force</description>
+		<var_heal>-2</var_heal>
+		<unit_id>2567</unit_id>
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2567</unit_id>
+				<number>2</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>336</skill_id>
+		<name>Control</name>
+		<description>Chance to control an enemy Commander</description>
+		<control>1</control>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>337</skill_id>
+		<name>Ignite</name>
+		<description>Chance to deal major damage and prevent enemy healing</description>
+		<damage>5</damage>
+		<antiheal>5</antiheal>
+	</skill>
+	<skill>
+		<skill_id>338</skill_id>
+		<name>Devour Purity</name>
+		<description>Chance to deal minor damage and jam an enemy Righteous unit</description>
+		<damage>2</damage>
+		<jamming>1</jamming>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>339</skill_id>
+		<name>Dual Gatling</name>
+		<description>Chance to deal flurry damage</description>
+		<flurry>3</flurry>
+		<damage>3</damage>
+	</skill>
+	<skill>
+		<skill_id>340</skill_id>
+		<name>Tactical Resupply</name>
+		<description>Chance to bring an Infantry unit into battle and deal damage against Epic Bosses</description>
+		<epic_damage>6</epic_damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>341</skill_id>
+		<name>Dual Gatling</name>
+		<description>Chance to jam an enemy Structure</description>
+		<jamming>1</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>342</skill_id>
+		<name>Ground Support</name>
+		<description>Chance to cause damage and increase Naval damage by 15%</description>
+		<support_bonus>.15</support_bonus>
+		<damage>6</damage>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>343</skill_id>
+		<name>Surface Shatter</name>
+		<description>Chance to cause damage and prevent enemy Robotic unit from entering battle</description>
+		<damage>8</damage>
+		<jamming>1</jamming>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>344</skill_id>
+		<name>Tactical Raid</name>
+		<description>Chance to cause massive damage against Epic Bosses</description>
+		<epic_damage>20</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>345</skill_id>
+		<name>Slice</name>
+		<description>Chance to deal major damage</description>
+		<epic_damage>9</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>346</skill_id>
+		<name>Dice</name>
+		<description>Chance to jam an enemy Infantry unit</description>
+		<jamming>1</jamming>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>347</skill_id>
+		<name>Defensive Turret</name>
+		<description>Chance to deal damage and jam an enemy Naval unit</description>
+		<damage>6</damage>
+		<jamming>1</jamming>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>348</skill_id>
+		<name>Blood Burn</name>
+		<description>Chance to deal damage and bring a Bloodthirsty unit into battle</description>
+		<damage>10</damage>
+		<reinforce>1</reinforce>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>349</skill_id>
+		<name>Naval Support</name>
+		<description>Chance to cause minor damage and increase Naval damage by 3%</description>
+		<support_bonus>.03</support_bonus>
+		<damage>5</damage>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	
+	<skill>
+		<skill_id>350</skill_id>
+		<name>Orbital Strike</name>
+		<description>Chance to deal major damage against Epic Bosses</description>
+		<epic_damage>16</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>351</skill_id>
+		<name>Rampart Reinforcements</name>
+		<description>Bring in three Assault units</description>
+		<reinforce>3</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>352</skill_id>
+		<name>Hellfire</name>
+		<description>Chance to deal crippling damage</description>
+		<damage>40</damage>
+	</skill>
+	<skill>
+		<skill_id>353</skill_id>
+		<name>Scorched Earth</name>
+		<description>Chance to prevent two enemy units from being reinforced</description>
+		<antireinforce>2</antireinforce>
+	</skill>
+	<skill>
+		<skill_id>354</skill_id>
+		<name>Covering Fire</name>
+		<description>Chance to prevent two units from being jammed</description>
+		<antijam>2</antijam>
+	</skill>
+	<skill>
+		<skill_id>355</skill_id>
+		<name>Advanced Tactics</name>
+		<description>Chance to deal damage and prevent a unit from being jammed</description>
+		<antijam>1</antijam>
+		<damage>10</damage>
+	</skill>
+	<skill>
+		<skill_id>356</skill_id>
+		<name>Phobos Strike</name>
+		<description>Chance to deal damage and bring in three Infantry units</description>
+		<reinforce>3</reinforce>
+		<unit_subtype>3</unit_subtype>
+		<damage>25</damage>
+	</skill>
+	<skill>
+		<skill_id>357</skill_id>
+		<name>Anti-Gravity</name>
+		<description>Chance to deal damage and bring two Flying units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>2</unit_subtype>
+		<damage>15</damage>
+	</skill>
+	<skill>
+		<skill_id>358</skill_id>
+		<name>Blightrisen</name>
+		<description>Chance to heal for each Bloodthirsty unit</description>
+		<var_heal>1</var_heal>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>359</skill_id>
+		<name>Blightrage</name>
+		<description>Chance to deal damage and increase damage from Bloodthirsty units by 25%</description>
+		<support_bonus>0.25</support_bonus>
+		<unit_subtype>5</unit_subtype>
+		<damage>15</damage>
+	</skill>
+	<skill>
+		<skill_id>360</skill_id>
+		<name>Cave-in</name>
+		<description>Chance to deal damage for each enemy Structure, and jam up to two enemy Structures</description>
+		<var_damage>1</var_damage>
+		<jamming>2</jamming>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>361</skill_id>
+		<name>Infernal Blast</name>
+		<description>Deals damage, and deals additional damage for each reinforced unit</description>
+		<damage>10</damage>
+		<reinforce_damage>1</reinforce_damage>
+	</skill>
+	<skill>
+		<skill_id>362</skill_id>
+		<name>Magmatic Fury</name>
+		<description>Chance to deal crippling damage</description>
+		<damage>35</damage>
+	</skill>
+	<skill>
+		<skill_id>363</skill_id>
+		<name>Absorb and Consume</name>
+		<description>Chance to deal massive damage and deal damage for each enemy Righteous unit</description>
+		<damage>15</damage>
+		<var_damage>1.5</var_damage>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>364</skill_id>
+		<name>Razebeam</name>
+		<description>Chance to deal damage</description>
+		<damage>10</damage>
+	</skill>
+	<skill>
+		<skill_id>365</skill_id>
+		<name>Xeno Disruption Ray</name>
+		<description>Chance to deal minor damage and jam enemy Xeno unit</description>
+		<jamming>1</jamming>
+		<damage>4</damage>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>366</skill_id>
+		<name>Heavy Bombard</name>
+		<description>Chance to deal damage</description>
+		<damage>7</damage>
+	</skill>
+	
+	<skill>
+		<skill_id>500</skill_id>
+		<name>Glory Wave</name>
+		<description>Chance to increase damage from Righteous units by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>501</skill_id>
+		<name>Great Purge</name>
+		<description>Chance to deal massive damage</description>
+		<damage>24</damage>
+	</skill>
+	<skill>
+		<skill_id>502</skill_id>
+		<name>Burning Zeal</name>
+		<description>Chance to prevent two units from being jammed</description>
+		<antijam>2</antijam>
+	</skill>
+	<skill>
+		<skill_id>503</skill_id>
+		<name>Devour Flesh</name>
+		<description>Chance to deal massive damage and prevent healing</description>
+		<damage>22</damage>
+		<antiheal>20</antiheal>
+	</skill>
+	<skill>
+		<skill_id>504</skill_id>
+		<name>Bloodroar</name>
+		<description>Chance to increase Bloodthirsty damage by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>505</skill_id>
+		<name>Cannibalize</name>
+		<description>Chance to heal for each Bloodthirsty unit</description>
+		<var_heal>2.5</var_heal>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>506</skill_id>
+		<name>Sky Haven</name>
+		<description>Chance to increase Flying damage by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>507</skill_id>
+		<name>Blitz Launch</name>
+		<description>Chance to bring two extra Flying units into battle</description>
+		<reinforce>2</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>508</skill_id>
+		<name>Cascade Bomb</name>
+		<description>Chance to deal massive damage</description>
+		<damage>24</damage>
+	</skill>
+	<skill>
+		<skill_id>509</skill_id>
+		<name>Uplink</name>
+		<description>Chance to increase Robotic damage by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>510</skill_id>
+		<name>Final Lockdown</name>
+		<description>Chance to jam an Assault unit</description>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>511</skill_id>
+		<name>Magneton Cannon</name>
+		<description>Chance to deal massive damage and jam enemy Commander</description>
+		<damage>20</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>512</skill_id>
+		<name>Parasite Wave</name>
+		<description>Chance to deal massive damage</description>
+		<damage>20</damage>
+	</skill>
+	<skill>
+		<skill_id>513</skill_id>
+		<name>Heart of the Enclave</name>
+		<description>Chance to increase Xeno damage by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>514</skill_id>
+		<name>Psychosis</name>
+		<description>Chance to control enemy Assault unit</description>
+		<control>1</control>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>515</skill_id>
+		<name>Thunderous Rally</name>
+		<description>Chance to increase Assault damage by 25%</description>
+		<support_bonus>0.25</support_bonus>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>516</skill_id>
+		<name>Maelstrom</name>
+		<description>Chance to deal massive flurry damage</description>
+		<damage>6</damage>
+		<flurry>5</flurry>
+	</skill>
+	<skill>
+		<skill_id>517</skill_id>
+		<name>Eternal Resolve</name>
+		<description>Chance to prevent up to four jams</description>
+		<antijam>4</antijam>
+	</skill>
+	<skill>
+		<skill_id>518</skill_id>
+		<name>Emblem of Courage</name>
+		<description>Chance to rally all Assault units and increase damage per attack</description>
+		<unit_type>2</unit_type>
+		<rally>1</rally>
+	</skill>
+	
+	
+	<skill>
+		<skill_id>521</skill_id>
+		<name>Cataclysmic Purge</name>
+		<description>Chance to deal massive damage</description>
+		<damage>44</damage>
+	</skill>
+	<skill>
+		<skill_id>522</skill_id>
+		<name>Enflamed Zeal</name>
+		<description>Chance to prevent three units from being jammed</description>
+		<antijam>3</antijam>
+	</skill>
+	
+	<skill>
+		<skill_id>523</skill_id>
+		<name>Ravaged Flesh</name>
+		<description>Chance to deal massive damage and prevent healing</description>
+		<damage>35</damage>
+		<antiheal>35</antiheal>
+	</skill>
+	<skill>
+		<skill_id>525</skill_id>
+		<name>Rend and Cannibalize</name>
+		<description>Chance to heal for each Bloodthirsty unit, and deal damage</description>
+		<var_heal>2.5</var_heal>
+		<damage>15</damage>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	
+	<skill>
+		<skill_id>527</skill_id>
+		<name>Blitz Support</name>
+		<description>Chance to bring three extra Flying units into battle</description>
+		<reinforce>3</reinforce>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>528</skill_id>
+		<name>Cascade Flames</name>
+		<description>Chance to deal massive damage</description>
+		<damage>40</damage>
+	</skill>
+	
+	<skill>
+		<skill_id>530</skill_id>
+		<name>Imminent Lockdown</name>
+		<description>Chance to jam two Assault units</description>
+		<jamming>2</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>531</skill_id>
+		<name>Gigaton Cannon</name>
+		<description>Chance to deal massive damage and jam enemy Commander</description>
+		<damage>36</damage>
+		<jamming>1</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	
+	<skill>
+		<skill_id>532</skill_id>
+		<name>Pandemic Wave</name>
+		<description>Chance to deal massive damage</description>
+		<damage>42</damage>
+	</skill>
+	<skill>
+		<skill_id>534</skill_id>
+		<name>Enraged Psychosis</name>
+		<description>Chance to control enemy Assault unit and deal damage</description>
+		<control>1</control>
+		<damage>14</damage>
+		<unit_type>2</unit_type>
+	</skill>
+	
+	<skill>
+		<skill_id>535</skill_id>
+		<name>Swarming</name>
+		<description>Chance to increase damage from Infantry units by 35%</description>
+		<support_bonus>.35</support_bonus>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>536</skill_id>
+		<name>Unrelenting</name>
+		<description>Chance to bring three Infantry units into battle</description>
+		<reinforce>3</reinforce>
+		<unit_subtype>3</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>537</skill_id>
+		<name>Merciless</name>
+		<description>Chance to deal massive damage</description>
+		<damage>40</damage>
+	</skill>
+	
+	<skill>
+		<skill_id>540</skill_id>
+		<name>Master Tactics</name>
+		<description>Chance to increase damage from Naval units by 50%</description>
+		<support_bonus>0.5</support_bonus>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>541</skill_id>
+		<name>Trident Cannon</name>
+		<description>Chance to deal massive damage</description>
+		<damage>25</damage>
+	</skill>
+	<skill>
+		<skill_id>542</skill_id>
+		<name>Fleetmaster</name>
+		<description>Chance to bring three Naval units into battle</description>
+		<reinforce>3</reinforce>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	
+	<skill>
+		<skill_id>599</skill_id>
+		<name>Day of Judgment</name>
+		<description>Jams all enemy Assault units and causes stupid damage</description>
+		<damage>500</damage>
+		<jamming>100</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	
+	<skill>
+		<skill_id>700</skill_id>
+		<name>Commander Copy</name>
+		<description>Chance to copy enemy commander's skill</description>
+	</skill>
+	
+	<skill>
+		<skill_id>701</skill_id>
+		<name>Commander Break</name>
+		<description>Chance to reduce the healing of opponent by 25%</description>
+		<percent_antiheal>.25</percent_antiheal>
+	</skill>
+	
+	<skill>
+		<skill_id>1001</skill_id>
+		<name>Advance</name>
+		<description>Chance to increase Attack by 20%</description>
+		<attack>0.2</attack>
+	</skill>
+	<skill>
+		<skill_id>1002</skill_id>
+		<name>Blitz</name>
+		<description>Chance to deal damage</description>
+		<damage>3</damage>
+	</skill>
+	<skill>
+		<skill_id>1003</skill_id>
+		<name>Initiative</name>
+		<description>Chance to bring an additional Assault unit to battle</description>
+		<reinforce>1</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>1004</skill_id>
+		<name>Fortitude</name>
+		<description>Chance to increase Defense by 20%</description>
+		<attack>0.2</attack>
+	</skill>
+	<skill>
+		<skill_id>1005</skill_id>
+		<name>Tactics</name>
+		<description>Chance to jam enemy Assault unit</description>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>1006</skill_id>
+		<name>Regeneration</name>
+		<description>Chance to heal</description>
+		<heal>3</heal>
+	</skill>
+	<skill>
+		<skill_id>2001</skill_id>
+		<name>Power Boost</name>
+		<description>Chance to increase Attack by 10%</description>
+		<attack>0.1</attack>
+	</skill>
+	<skill>
+		<skill_id>2002</skill_id>
+		<name>Shield Boost</name>
+		<description>Chance to increase Defense by 10%</description>
+		<defense>0.1</defense>
+	</skill>
+	<skill>
+		<skill_id>2003</skill_id>
+		<name>Battle Heal</name>
+		<description>Chance to stitch wounds and regain health</description>
+		<heal>2</heal>
+	</skill>
+	<skill>
+		<skill_id>2004</skill_id>
+		<name>Aimed Shot</name>
+		<description>Chance to snipe the enemy for damage</description>
+		<damage>2</damage>
+	</skill>
+	<skill>
+		<skill_id>2005</skill_id>
+		<name>Damage Amplifier</name>
+		<description>Chance to increase Damage by 15%</description>
+		<support_bonus>0.15</support_bonus>
+	</skill>
+	<skill>
+		<skill_id>2006</skill_id>
+		<name>Laser Guided</name>
+		<description>Chance to deal damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>2007</skill_id>
+		<name>Implosion</name>
+		<description>Chance to deal major damage</description>
+		<damage>10</damage>
+	</skill>
+	<skill>
+		<skill_id>2008</skill_id>
+		<name>Mend Wounds</name>
+		<description>Chance to stitch wounds and regain health</description>
+		<heal>15</heal>
+	</skill>
+	<skill>
+		<skill_id>2009</skill_id>
+		<name>Irradiation</name>
+		<description>Chance to prevent healing</description>
+		<antiheal>20</antiheal>
+	</skill>
+	<skill>
+		<skill_id>2010</skill_id>
+		<name>Promote</name>
+		<description>Chance to bring a Commander into battle</description>
+		<reinforce>1</reinforce>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>2011</skill_id>
+		<name>Recruit</name>
+		<description>Chance to bring an Assault unit into battle</description>
+		<reinforce>1</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>2012</skill_id>
+		<name>Construct</name>
+		<description>Chance to bring 2 Structures into battle</description>
+		<reinforce>2</reinforce>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>2013</skill_id>
+		<name>Willpower</name>
+		<description>Prevents one unit from being Jammed</description>
+		<antijam>2</antijam>
+		<unit_type>2</unit_type>
+	</skill>
+	
+	
+	<skill>
+		<skill_id>2100</skill_id>
+		<name>Metalworks</name>
+		<description>Brings an extra Robotic unit into battle and increases damage by Robotic units</description>
+		<reinforce>1</reinforce>
+		<rally>1</rally>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2101</skill_id>
+		<name>Oceanis</name>
+		<description>Deals damage and increases damage by Naval units</description>
+		<damage>15</damage>
+		<rally>1</rally>
+		<unit_subtype>7</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2102</skill_id>
+		<name>Enclave Will</name>
+		<description>Prevents one unit from being jammed and increases damage by Xeno units</description>
+		<antijam>1</antijam>
+		<rally>1</rally>
+		<unit_subtype>6</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2103</skill_id>
+		<name>Purity</name>
+		<description>Prevents a unit from being controlled and increases damage by Righteous units</description>
+		<anticontrol>1</anticontrol>
+		<rally>1</rally>
+		<unit_subtype>8</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2104</skill_id>
+		<name>Cannibal Force</name>
+		<description>Heals massively and increases damage by Bloodthirsty units</description>
+		<heal>20</heal>
+		<rally>1</rally>
+		<unit_subtype>5</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2105</skill_id>
+		<name>Skyshard</name>
+		<description>Prevents an enemy reinforcement from entering battle and increases damage by Flying units</description>
+		<antireinforce>1</antireinforce>
+		<rally>1</rally>
+		<unit_subtype>2</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>2106</skill_id>
+		<name>Blightshudder</name>
+		<description>Controls an enemy Commander and heals significantly</description>
+		<control>1</control>
+		<unit_type>1</unit_type>
+		<heal>20</heal>
+	</skill>
+	
+	<skill>
+		<skill_id>3001</skill_id>
+		<name>Magnetic Field</name>
+		<description>Heals critically</description>
+		<heal>80</heal>
+	</skill>
+	<skill>
+		<skill_id>3002</skill_id>
+		<name>Overheat</name>
+		<description>Takes massive damage</description>
+		<heal>-80</heal>
+	</skill>
+	<skill>
+		<skill_id>3003</skill_id>
+		<name>Magnetic Field</name>
+		<description>Heals critically</description>
+		<heal>150</heal>
+	</skill>
+	<skill>
+		<skill_id>3004</skill_id>
+		<name>Sigma Pulse</name>
+		<description>Heals critically</description>
+		<heal>60</heal>
+		<unit_subtype>4</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>3005</skill_id>
+		<name>Blood Rage</name>
+		<description>Heals and deals massive damage</description>
+		<heal>20</heal>
+		<damage>30</damage>
+	</skill>
+	<skill>
+		<skill_id>3006</skill_id>
+		<name>Ancient Purge</name>
+		<description>Heals and deals massive damage</description>
+		<heal>60</heal>
+		<damage>50</damage>
+	</skill>
+	<skill>
+		<skill_id>3007</skill_id>
+		<name>Repair Barricade</name>
+		<description>Chance to cause massive healing</description>
+		<heal>30</heal>
+	</skill>
+	<skill>
+		<skill_id>3008</skill_id>
+		<name>Incinerate</name>
+		<description>Chance to deal massive damage</description>
+		<damage>30</damage>
+	</skill>
+	<skill>
+		<skill_id>3009</skill_id>
+		<name>Repair Mech</name>
+		<description>Chance to heal critically</description>
+		<heal>30</heal>
+	</skill>
+	<skill>
+		<skill_id>3010</skill_id>
+		<name>Concussion</name>
+		<description>Chance to jam up to 2 Assault units</description>
+		<jamming>2</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3011</skill_id>
+		<name>Aerial Siege</name>
+		<description>Chance to deal massive damage</description>
+		<damage>50</damage>
+	</skill>
+	<skill>
+		<skill_id>3012</skill_id>
+		<name>Aerial Support</name>
+		<description>Chance to heal critically and jam an enemy Assault unit</description>
+		<heal>20</heal>
+		<jamming>2</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3013</skill_id>
+		<name>Paradrop</name>
+		<description>Chance to deal damage</description>
+		<damage>15</damage>
+	</skill>
+	<skill>
+		<skill_id>3014</skill_id>
+		<name>Gorgon Stare</name>
+		<description>Chance to jam an enemy Assault unit</description>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3015</skill_id>
+		<name>Rupturing Grasp</name>
+		<description>Chance to deal massive damage and jam an enemy Assault unit</description>
+		<damage>25</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3016</skill_id>
+		<name>Hardened Shell</name>
+		<description>Chance to reduce damage and prevent one jam</description>
+		<shield>1</shield>
+		<antijam>1</antijam>
+	</skill>
+	<skill>
+		<skill_id>3017</skill_id>
+		<name>Leeching Bite</name>
+		<description>Chance to heal massively and deal massive damage</description>
+		<heal>10</heal>
+		<damage>100</damage>
+	</skill>
+	<skill>
+		<skill_id>3018</skill_id>
+		<name>Vile Stare</name>
+		<description>Chance to control an enemy Commander</description>
+		<control>1</control>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3019</skill_id>
+		<name>Leeching Bite</name>
+		<description>Chance to heal massively and deal massive damage</description>
+		<heal>8</heal>
+		<damage>8</damage>
+	</skill>
+	<skill>
+		<skill_id>3020</skill_id>
+		<name>Lithid Gasp</name>
+		<description>Chance to heal massively and deal massive damage</description>
+		<heal>20</heal>
+		<damage>200</damage>
+	</skill>
+	<skill>
+		<skill_id>3021</skill_id>
+		<name>Lithid Mind</name>
+		<description>Chance to control an enemy Assault unit</description>
+		<control>1</control>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3022</skill_id>
+		<name>Lithid Link</name>
+		<description>Heals massively</description>
+		<heal>100</heal>
+	</skill>
+	<skill>
+		<skill_id>3023</skill_id>
+		<name>Talos Glory</name>
+		<support_bonus>2</support_bonus>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3024</skill_id>
+		<name>Talos Fury</name>
+		<damage>6</damage>
+	</skill>
+	<skill>
+		<skill_id>3025</skill_id>
+		<name>Decapitate</name>
+		<jamming>2</jamming>
+		<unit_type>1</unit_type>
+	</skill>
+	<skill>
+		<skill_id>3026</skill_id>
+		<name>Gnorax Regeneration</name>
+		<description>Heals critically</description>
+		<heal>500</heal>
+	</skill>
+	<skill>
+		<skill_id>3027</skill_id>
+		<name>Gnorax Head</name>
+		<description/>
+		<damage>5</damage>
+		<reinforce>10</reinforce>
+		<unit_subtype>20</unit_subtype>
+	</skill>
+	<skill>
+		<skill_id>3028</skill_id>
+		<name>Gnorax Armor</name>
+		<description>Chance to reduce enemy damage by 1</description>
+		<shield>1</shield>
+	</skill>
+	<skill>
+		<skill_id>3029</skill_id>
+		<name>Blightgasp</name>
+		<description/>
+		<antireinforce>3</antireinforce>
+		<damage>25</damage>
+	</skill>
+	<skill>
+		<skill_id>3030</skill_id>
+		<name>Blightshudder</name>
+		<description/>
+		<control>1</control>
+		<unit_type>1</unit_type>
+		<heal>20</heal>
+	</skill>
+	<skill>
+		<skill_id>3031</skill_id>
+		<name>Blightschism</name>
+		<description/>
+		<jamming>2</jamming>
+		<unit_type>2</unit_type>
+		<damage>30</damage>
+	</skill>
+	<skill>
+		<skill_id>3032</skill_id>
+		<name>Blightschism</name>
+		<description/>
+		<jamming>4</jamming>
+		<unit_type>4</unit_type>
+		<damage>30</damage>
+	</skill>
+	
+	<skill>
+		<skill_id>4000</skill_id>
+		<name>Tank Bust</name>
+		<description>Chance to deal Massive Damage</description>
+		<damage>5</damage>
+	</skill>
+	<skill>
+		<skill_id>4001</skill_id>
+		<name>Heavy Bombard</name>
+		<description>Chance to deal massive damage</description>
+		<damage>7</damage>
+	</skill>
+	<skill>
+		<skill_id>4002</skill_id>
+		<name>Copy</name>
+		<description>Chance to copy enemy assault Unit's skill</description>
+	</skill>
+	<skill>
+		<skill_id>4003</skill_id>
+		<name>Break</name>
+		<description>Chance to reduce the healing of opponent by 25%</description>
+		<percent_antiheal>.25</percent_antiheal>
+	</skill>
+	<skill>
+		<skill_id>4004</skill_id>
+		<name>Structural Integrity</name>
+		<description>Chance to deal damage based on amount of structures owned</description>
+		<var_damage>3</var_damage>
+		<unit_type>4</unit_type>
+	</skill>
+	<skill>
+		<skill_id>4005</skill_id>
+		<name>Interference</name>
+		<description>Chance to prevent enemy unit from jamming</description>
+		<direct_antijam>1</direct_antijam>
+	</skill>
+	<skill>
+		<skill_id>4006</skill_id>
+		<name>Plan B</name>
+		<description>Chance to heal for each friendly unit jammed</description>
+		<jam_heal>5</jam_heal>
+	</skill>
+	<skill>
+		<skill_id>4007</skill_id>
+		<name>Radio Spike</name>
+		<description>Chance to deal damage for each friendly unit jammed</description>
+		<jam_damage>2</jam_damage>
+	</skill>
+	<skill>
+		<skill_id>4008</skill_id>
+		<name>Barrier Shock</name>
+		<description>Chance to deal damage for each reinforced enemy unit</description>
+		<reinforce_damage>2.5</reinforce_damage>
+	</skill>
+	<skill>
+		<skill_id>4009</skill_id>
+		<name>Replacements</name>
+		<description>Chance to bring an additional Assault unit into battle after being jammed</description>
+		<reinforce>1</reinforce>
+		<unit_type>2</unit_type>
+	</skill>
+	<skill>
+		<skill_id>4010</skill_id>
+		<name>Retaliation</name>
+		<description>Chance to increase damage by 10% after being jammed</description>
+		<attack>0.1</attack>
+	</skill>
+	<skill>
+		<skill_id>4011</skill_id>
+		<name>Hunker</name>
+		<description>Chance to increase defense by 10% after being jammed</description>
+		<defense>0.1</defense>
+	</skill>
+	<skill>
+		<skill_id>4012</skill_id>
+		<name>Strange Transmissions</name>
+		<description>Chance to prevent enemy healing after being jammed.</description>
+		<antiheal>3</antiheal>
+	</skill>
+	<skill>
+		<skill_id>4013</skill_id>
+		<name>Enraged Strikes</name>
+		<description>Chance on being jammed to deal minor damage 2 times</description>
+		<damage>2</damage>
+		<flurry>2</flurry>
+	</skill>
+	<skill>
+		<skill_id>4014</skill_id>
+		<name>Rockslide</name>
+		<description>Chance to deal damage for each reinforced enemy unit</description>
+		<reinforce_damage>8</reinforce_damage>
+	</skill>
+	
+	<skill>
+		<skill_id>4015</skill_id>
+		<name>Sideswipe</name>
+		<description>Chance to deal massive damage</description>
+		<damage>20</damage>
+	</skill>
+	<skill>
+		<skill_id>4016</skill_id>
+		<name>Regenerate</name>
+		<description>Chance to heal massively</description>
+		<healing>20</healing>
+	</skill>
+	
+	<skill>
+		<skill_id>4017</skill_id>
+		<name>Rupturing Grasp</name>
+		<description>Chance to deal massive damage and jam an enemy Assault unit</description>
+		<damage>12</damage>
+		<jamming>1</jamming>
+		<unit_type>2</unit_type>
+	</skill>
+	
+	
+	
+	<skill>
+		<skill_id>4111</skill_id>
+		<name>Pyros</name>
+		<description>Chance to deal damage
+</description>
+		<damage>8</damage>
+	</skill>
+	<skill>
+		<skill_id>4112</skill_id>
+		<name>Brotherhood</name>
+		<description>Chance to deal damage</description>
+		<damage>15</damage>
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2702</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>4115</skill_id>
+		<name>Triton Cannon Upgrade</name>
+		<description>Chance to deal major damage if the Poseidon Vindicator is in the active Force
+</description>
+		<damage>30</damage>
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2703</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+	<skill>
+		<skill_id>4128</skill_id>
+		<name>Panzerfaust</name>
+		<description>Chance to deal massive damage against Epic Bosses</description>
+		<epic_damage>35</epic_damage>
+	</skill>
+	<skill>
+		<skill_id>4129</skill_id>
+		<name>Brotherhood</name>
+		<description>Chance to deal massive damage</description>
+		<damage>20</damage>
+		<skill_reqs>
+			<skill_req>
+				<unit_id>2701</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>
+</root>`;
+        const parser = new DOMParser();
+        const xmlDoc = parser.
+            parseFromString(xmlString, "text/xml");
+
+        const rootNode = xmlDoc.
+            querySelector("root");
+
+        const skills = rootNode.querySelectorAll("skill");
+        const out = {};
+        /*
+	<skill>
+		<skill_id>262</skill_id>
+		<name>Skyhammer</name>
+		<description>Chance to increase Flying damage by 50%</description>
+		<support_bonus>.5</support_bonus>
+		<unit_subtype>2</unit_subtype>
+        <skill_reqs>
+			<skill_req>
+				<unit_id>2701</unit_id>
+				<number>1</number>
+			</skill_req>
+		</skill_reqs>
+	</skill>*/
+        const targetKeys = ["unit_type", "unit_subtype", "unit_id",
+        "heal", "damage", "jamming", "attack", "defense", "reinforce", "antiheal", "support_bonus", "control",
+        "var_damage", "var_heal", "heal_cap", "epic_damage", "epic_heal", "epic_antiheal", "antijam", "antireinforce", "anticontrol",
+        "flurry", "shield", "rally", "anti_defense", "anti_attack", "reinforce_damage", "jam_heal", "jam_damage", "enemy_jam_damage",
+        "damage_cap","percent_antiheal", "heal_damage", "antishield", "summon", "healing"];
+        skills.forEach((skill) => {
+            const id = parseInt(skill.querySelector("skill_id").textContent);
+            const name = skill.querySelector("name").textContent;
+            const sk = { name: name };
+            for(var key in targetKeys){
+                const value = skill.querySelector(targetKeys[key]);
+                if(value){
+                    sk[targetKeys[key]] = parseFloat(value.textContent);
+                }
+            }
+
+            const requirements = skill.querySelectorAll("skill_reqs skill_req");
+            console.log(requirements)
+            if(requirements.length > 0){
+                sk.requirements = [];
+                requirements.forEach((req) => {
+                    const reqObj = {};
+                    const unit_id = req.querySelector("unit_id")?.textContent;
+                    if(unit_id)
+                        reqObj.unit_id = parseInt(unit_id);
+                    const sub_type_id = req.querySelector("sub_type_id")?.textContent;
+                    if(sub_type_id)
+                        reqObj.sub_type_id = parseInt(sub_type_id);
+                    reqObj.number = parseInt(req.querySelector("number").textContent);
+                    sk.requirements.push(reqObj);
+                });
+            }
+
+            out[id] = sk;
+        });
+        console.log(out);
+        </script>
 </body>
 </html>

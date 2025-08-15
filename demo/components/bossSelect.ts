@@ -1,32 +1,40 @@
 import type { BossesFile, Boss } from '../types/boss';
 
 class BossSelect extends HTMLSelectElement {
+    static elementName = 'boss-select';
+    static observedAttributes = ['data-file'];
+
     bosses: Boss[] = [];
     constructor() {
         super();
     }
 
-    connectedCallback() {
-        const dataFile = this.getAttribute('data-file');
+    async attributeChangedCallback(name, oldValue, newValue) {
+        if(name === 'data-file') {
+            this.bosses = await this.loadData(newValue);
+            this.renderSelect();
+        }
+    }
+
+    async loadData(dataFile: string | null) : Promise<Boss[]>{
         if (dataFile) {
-            fetch(dataFile)
-            .then(response => response.json())
-            .then((data:BossesFile) => {
-                this.bosses = data.bosses;
-                this.renderSelect();
-            })
-            .catch(error => {
+            try{
+                const response = await fetch(dataFile);
+                return ((await response.json()) as BossesFile).bosses || [];
+            }
+            catch(error){
                 console.error('Error loading data file:', error);
-            });
+            }
         } else {
             console.error('No data file specified for BossSelect');
         }
+        return [];
     }
 
     renderSelect(data:Boss[] = this.bosses) {
         this.innerHTML = '';
-        for(let i = 0; i < this.bosses.length; i++) {
-            const boss: Boss = this.bosses[i];
+        for(let i = 0; i < data.length; i++) {
+            const boss: Boss = data[i];
             const option = document.createElement('option');
             option.value = boss.name;
             option.textContent = boss.name;
@@ -38,6 +46,10 @@ class BossSelect extends HTMLSelectElement {
         }
     }
 
+    get boss() {
+		return this.getBoss();
+	}
+
     getBoss(name?:string): Boss | null {
         if(typeof name !== 'string') {
             name = this.value
@@ -48,4 +60,4 @@ class BossSelect extends HTMLSelectElement {
 
 export type { BossSelect };
 
-customElements.define("boss-select", BossSelect, { extends: 'select' });
+customElements.define(BossSelect.elementName, BossSelect, { extends: 'select' });

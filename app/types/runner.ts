@@ -17,9 +17,10 @@ export const PHASE_ORDER: BattlePhase[] = [
   BattlePhase.POST,
 ];
 
-/* export interface BattleState {
-    player1: PlayerBattleState;
-    player2: PlayerBattleState;
+export interface BattleState {
+    //data
+    //prepared: boolean;
+    
 }
 
 export interface PlayerBattleState {
