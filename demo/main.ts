@@ -2,13 +2,17 @@ import '../app/index';
 import './components/switch';
 import './components/bossSelect';
 import type { BossSelect } from './components/bossSelect';
+import type { BattleConfig, PlayerConfig  } from '../app/types/runner';
+import { MultiOrchestrator } from '../app/orchestrator/multiOrchestrator';
+import { RenderSingleBattleResult, RenderAggregateBattleResult } from '../app/reporter/reporter';
+import BattleRunner from '../app/simulator';
+
+//import {BattleRunner} from './types/runner';
 
 window.addEventListener('DOMContentLoaded', async () => {
     const data = await LoadData('simdata.json');
     
     document.getElementById('boss-select')?.addEventListener('change', (event) => {
-        console.log('Selected Boss:', (event.target as BossSelect).getBoss());
-        console.log((document.getElementById('force2')! as HTMLTextAreaElement));
         const boss = (event.target as BossSelect).getBoss();
         if(boss){
             (document.getElementById('force2')! as HTMLTextAreaElement).value = boss.force || '';
@@ -28,8 +32,22 @@ window.addEventListener('DOMContentLoaded', async () => {
         for (var pair of formData.entries()) {
         console.log(pair[0] + ": " + pair[1]);
         }
+        const config:BattleConfig = {
+            player1: {
+                force: (document.getElementById('force1')! as HTMLTextAreaElement).value,
+                power: parseFloat((document.getElementById('power1')! as HTMLInputElement).value),
+            },
+            player2: {
+                force: (document.getElementById('force2')! as HTMLTextAreaElement).value,
+                power: parseFloat((document.getElementById('power2')! as HTMLInputElement).value),
+                level: parseInt((document.getElementById('level')! as HTMLInputElement).value, 10),
+                reinforcementConstraints: (document.getElementById('reinforcementConstraints')! as HTMLTextAreaElement).value,
+            },
+            epicMode: (document.getElementById('mode-switch')! as HTMLInputElement).checked,
+            data: data
+        };
 
-        Battle();
+        Battle(config);
     });
 });
 
@@ -47,7 +65,16 @@ function LoadData(file: string): Promise<any> {
         });
 }
 
-function Battle(){
+function Battle(config:BattleConfig){
+    //const runner = new MultiOrchestrator(config);
+    //const result = runner.run(1);
+    const sim = new BattleRunner();
+    const result = sim.run(config);
+    const output = RenderSingleBattleResult(result, config.data);
+    console.log(result);
+    console.log(output);
+    document.body.appendChild(output);
+    console.log('Battle executed with config:', config);
     /*
     if single create battlerunner function
     if multi - use multi utility to run multiple battles using same battlerunner that has parsed data

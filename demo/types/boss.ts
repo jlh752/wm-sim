@@ -3,7 +3,7 @@ export type Boss = {
     level: number;
     stat: number;
     force: string;
-    reinforcementRestrictions: string; //format: "id|count;id|count;"
+    reinforcementRestrictions: string; //using string format as this needs to be sent over form: "id|count;id|count;"
 }
 
 export type BossesFile = {

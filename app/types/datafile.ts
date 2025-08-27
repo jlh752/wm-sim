@@ -1,49 +1,91 @@
-import {GenericAbility, AbilityID} from "./ability";
-
 export interface DataFile{
-    units: {[id: string]: Unit;};
-    skills: {[id: string]: Skill;};
-    types: {[id: string]: Type;};
-    subtypes: {[id: string]: SubType;};
+    units: {[id: number]: Unit;};
+    skills: {[id: number]: Skill;};
+    types: {[id: number]: Type;};
+    subtypes: {[id: number]: SubType;};
 }
-interface UnitAbility {
-    ability: AbilityID;
-    procChance: number;
+export interface UnitSkill {
+    skill_id: number;
+    chance: number;
+}
+interface DefaultUnitAttributes {
+
 }
 export interface Unit {
-  unitName: string;
-  unitUnique?: boolean | number;
-  unitClass: keyof DataFile["types"];
-  unitType1?: keyof DataFile["subtypes"];
-  unitType2?: keyof DataFile["subtypes"];
-  unitAttack?: number;
-  unitDefence?: number;
-  unitAbilities?: string;
-  unitPriority?: number;
-  unitIronwill?: boolean | number;
-  unitStealth?: boolean | number;
-  unitAbilitiesParsed?: UnitAbility[];
+    id: number;
+    name: string;
+    unique?: boolean | number;
+    type: keyof DataFile["types"];
+    sub_type?: keyof DataFile["subtypes"];
+    sub_type2?: keyof DataFile["subtypes"];
+    attack?: number;
+    defense?: number;
+    skills?: UnitSkill[];
+    level?: number;
+    no_control?: number | boolean;
+    no_jam?: number | boolean;
 }
 
-interface AbilityRequirement {
+export interface AbilityRequirement {
     count: number;
-    Class: number;
-    type: number;
-    name: number;
+    unit_id?: number;
+    type_id?: number;
+    subtype_id?: number;
 }
-export interface Skill{
-    skillName: string;
-    skillSyntax: string;
-    skillReqs: string;
-    skillParsed?: GenericAbility;
-    skillRequirementsParsed?: AbilityRequirement[];
-    isValid?: boolean[];//valid per player
+interface DefaultSkillsAttributes {
+    heal?: number;
+    damage?: number;
+    jamming?: number;
+    attack?: number;
+    defense?: number;
+    reinforce?: number;
+    antiheal?: number;
+    support_bonus?: number;
+    control?: number;
+    var_damage?: number;
+    var_heal?: number;
+    heal_cap?: number;
+    epic_damage?: number;
+    epic_heal?: number;
+    epic_antiheal?: number;
+    antijam?: number;
+    antireinforce?: number;
+    anticontrol?: number;
+    flurry?: number;
+    shield?: number;
+    rally?: number;
+    anti_defense?: number;
+    anti_attack?: number;
+    reinforce_damage?: number;
+    jam_heal?: number;
+    jam_damage?: number;
+    enemy_jam_damage?: number;
+    damage_cap?: number;
+    percent_antiheal?: number;
+    heal_damage?: number;
+    antishield?: number;
+    summon?: number;
+    healing?: number;
 }
+export interface Skill<TCustomAttributes = {}> extends DefaultSkillsAttributes{
+    name: string;
+    requirements?: AbilityRequirement[];
+
+    unit_type?: number;
+    unit_subtype?: number;
+    unit_id?: number;
+
+    isValid?: boolean;//valid per player
+
+    custom?: TCustomAttributes;
+}
+
+export type DefaultSkill = Skill<{}>;
 
 export interface Type{
-    typeName: string;
+    name: string;
 }
 
 export interface SubType{
-    subtypeName:string;
+    name:string;
 }
