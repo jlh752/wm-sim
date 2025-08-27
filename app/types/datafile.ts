@@ -8,9 +8,6 @@ export interface UnitSkill {
     skill_id: number;
     chance: number;
 }
-interface DefaultUnitAttributes {
-
-}
 export interface Unit {
     id: number;
     name: string;

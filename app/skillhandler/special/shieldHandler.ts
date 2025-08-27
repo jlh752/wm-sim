@@ -1,5 +1,6 @@
 import { Skill } from "../../types/datafile";
-import { CurrentUnit, IBattleRunner, PlayerBattleState } from "../../types/runner";
+import { IBattleRunner } from "../../types/runner";
+import { PlayerBattleState, CurrentUnit } from "../../types/player";
 import { LogTypes, ReduceLog, GenericLog } from "../../types/log";
 import type {ISkillHandler} from "../skillHandler";
 import { BattlePhase } from "../../types/util/battlePhase";

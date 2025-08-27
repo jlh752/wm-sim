@@ -1,5 +1,6 @@
 import { Skill } from "../../types/datafile";
-import { CurrentUnit, IBattleRunner, PlayerBattleState } from "../../types/runner";
+import { IBattleRunner } from "../../types/runner";
+import { PlayerBattleState, CurrentUnit } from "../../types/player";
 import { LogTypes, ReinforceLog, GenericLog } from "../../types/log";
 import type {ISkillHandler} from "../skillHandler";
 import { BattlePhase } from "../../types/util/battlePhase";
@@ -40,8 +41,17 @@ class ReinforceHandler implements ISkillHandler {
                     }
                     availableReinforcements--;
                 }else{
-                    const prevented = Math.min(player.other.preventReinforcements, availableReinforcements);
-                    const succeeded = availableReinforcements - prevented;
+                    //some bosses have a cap on the number of reinforcements they can do at once (they will usually lift the cap under some condition)
+                    let numberToReinforce = availableReinforcements;
+                    if(skill.unit_id && skill.unit_id in player.reinforcementConstraints){
+                        numberToReinforce = Math.min(availableReinforcements, player.reinforcementConstraints[skill.unit_id]);
+                        if(numberToReinforce === availableReinforcements){
+                            slotsToRemove.unshift(i);//remove from pool
+                        }
+                    }
+
+                    const prevented = Math.min(player.other.preventReinforcements, numberToReinforce);
+                    const succeeded = numberToReinforce - prevented;
                     if(prevented > 0){
                         player.other.preventReinforcements -= prevented;
                         log.instances.push({success: false, amount: prevented, target_unit_id: reinforcement.unitId});
@@ -57,7 +67,7 @@ class ReinforceHandler implements ISkillHandler {
                             player.reinforced++;
                         }
                     }
-                    availableReinforcements = 0;
+                    availableReinforcements -= numberToReinforce;
                 }
             }
             if(availableReinforcements === 0)

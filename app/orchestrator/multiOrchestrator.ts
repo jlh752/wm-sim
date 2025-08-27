@@ -1,5 +1,8 @@
 import type { IMultiBattleOrchestrator, } from './types/simulationOrchestrator';
-import type {BattleConfig, IBattleRunner, BattleResult} from '../types/runner';
+import { BattleConfig } from '../types/config';
+import { BattleResult } from '../types/result';
+import { IBattleRunner } from "../types/runner";
+import { PlayerBattleState, CurrentUnit } from "../types/player";
 import BattleRunner from '../simulator';
 import { MultiBattleResult } from './types/simulationOrchestrator';
 

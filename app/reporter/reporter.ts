@@ -1,9 +1,9 @@
-import type { BattleResult } from '../types/runner';
+import type { BattleResult } from '../types/result';
 import {LogTypes} from '../types/log';
 import type { IMultiBattleResult } from '../orchestrator/types/simulationOrchestrator';
 import type {Log} from '../types/log';
 import type {DataFile} from '../types/datafile';
-import { PlayerIndex } from '../types/runner';
+import PlayerIndex from '../types/util/playerIndex';
 
 
 export function RenderAggregateBattleResult(result: IMultiBattleResult): HTMLElement {

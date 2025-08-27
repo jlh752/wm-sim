@@ -7,8 +7,6 @@ import { MultiOrchestrator } from '../app/orchestrator/multiOrchestrator';
 import { RenderSingleBattleResult, RenderAggregateBattleResult } from '../app/reporter/reporter';
 import BattleRunner from '../app/simulator';
 
-//import {BattleRunner} from './types/runner';
-
 window.addEventListener('DOMContentLoaded', async () => {
     const data = await LoadData('simdata.json');
     

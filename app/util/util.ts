@@ -1,4 +1,5 @@
-import type { PlayerConfig, Force, ReinforcementConstraint, CurrentUnit } from '../types/runner';
+import type { PlayerConfig, Force, ReinforcementConstraint } from '../types/config';
+import type { CurrentUnit } from '../types/player';
 import type TargetSpecification from '../types/util/targetSpecification';
 import type { DataFile } from '../types/datafile';
 

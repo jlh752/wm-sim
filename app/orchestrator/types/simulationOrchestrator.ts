@@ -1,4 +1,4 @@
-import type {BattleConfig} from '../../types/runner';
+import type {BattleConfig} from '../../types/config';
 
 export class IMultiBattleResult {
 

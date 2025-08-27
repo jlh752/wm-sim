@@ -26,6 +26,7 @@ export class PlayerBattleState {
     index: PlayerIndex;
     force: CurrentUnit[];
     reinforcements: CurrentUnit[];
+    reinforcementConstraints:Record<number,number>;
 
     baseAttack:number;
     private attack:number;
@@ -58,11 +59,20 @@ export class PlayerBattleState {
     constructor(player:PlayerConfig, data:DataFile, ind:PlayerIndex){
         this._data = data;
         this.force = typeof player.force !== "string" ?
-                player.force.units.map(u => ({unitId: u, definition: this._data.units[u]})) :
-                []
+            player.force.units.map(u => ({unitId: u, definition: this._data.units[u]})) :
+            []
         this.reinforcements = typeof player.force !== "string" ?
-                player.force.reinforcements.map(u => ({unitId: u, definition: this._data.units[u]})) :
-                [];
+            player.force.reinforcements.map(u => ({unitId: u, definition: this._data.units[u]})) :
+            [];
+
+        this.reinforcementConstraints = {};
+        if(player.reinforcementConstraints && typeof player.reinforcementConstraints !== 'string'){
+            for(let i = 0; i < player.reinforcementConstraints.length; i++){
+                const constraint = player.reinforcementConstraints[i];
+                this.reinforcementConstraints[constraint.unit] = constraint.count;
+            }
+        }
+        
         this.populateRequirementsData();
         this.baseAttack = player.power;
         this.attack = player.power;
