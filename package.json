@@ -12,7 +12,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest", 
+    "test": "vitest",
     "test:watch": "vitest --watch"
   },
   "repository": {
@@ -27,6 +27,7 @@
   "homepage": "https://github.com/jlh752/wm-sim#readme",
   "devDependencies": {
     "@vitejs/plugin-legacy": "^6.1.1",
+    "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"

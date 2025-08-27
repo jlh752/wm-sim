@@ -78,8 +78,10 @@ export class PlayerBattleState {
         this.populateRequirementsData();
         this.baseAttack = player.power;
         this.attack = player.power;
+        this.addAttack(10*this.force.reduce((atk,u) => atk + (u.definition.attack || 0), 0));
         this.baseDefense = player.power;
         this.defense = player.power;
+        this.addDefense(10*this.force.reduce((def,u) => def + (u.definition.defense || 0), 0));
         this.index = ind;
     }
 
@@ -181,6 +183,8 @@ export class PlayerBattleState {
     addUnit(unit:CurrentUnit):void{
         this.force.push(unit);
         this.addUnitToRequirementsData(unit.unitId);
+        this.addAttack(10*(unit.definition.attack || 0));
+        this.addDefense(10*(unit.definition.defense || 0));
     }
     removeUnit(slot:number):(CurrentUnit | undefined){
         if(slot < 0 || slot >= this.force.length)
@@ -195,6 +199,8 @@ export class PlayerBattleState {
     phaseComplete(){
         for(let i = 0; i < this.unitsToSummon.length; i++){
             this.force.unshift(this.unitsToSummon[i]);
+            this.addAttack(10*(this.unitsToSummon[i].definition.attack || 0));
+            this.addDefense(10*(this.unitsToSummon[i].definition.defense || 0));
             this.addUnitToRequirementsData(this.unitsToSummon[i].unitId);
         }
         this.unitsToSummon= [];

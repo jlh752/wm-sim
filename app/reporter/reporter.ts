@@ -117,6 +117,29 @@ export function RenderSingleBattleResult(result: BattleResult, data: DataFile): 
         }
         els.forEach(el => resultElement.appendChild(el));
     });
+
+    const p1Base = LogLine(0,`Your Force dealt ${result.player1.baseDamage} Damage. [${result.player1.power}]`);
+    p1Base.classList.add("space-above");
+    resultElement.appendChild(p1Base);
+    const p2Base = LogLine(0,`Enemy Force dealt ${result.player2.baseDamage} Damage. [${result.player2.power}]`);
+    resultElement.appendChild(p2Base);
+
+    const totalText = LogLine(0,"Total Damage Dealt");
+    totalText.classList.add("space-above");
+    resultElement.appendChild(totalText);
+
+    const p1Total = LogLine(0,`You: ${Math.abs(result.player1.totalDamage)} ${result.player1.totalDamage <= 0 ? "heal" : "damage"}.`);
+    resultElement.appendChild(p1Total);
+    const p2Total = LogLine(0,`Enemy: ${Math.abs(result.player2.totalDamage)}  ${result.player2.totalDamage <= 0 ? "heal" : "damage"}.`);
+    resultElement.appendChild(p2Total);
+
+    const verdictText = LogLine(0,`You ${result.player1.totalDamage >= result.player2.totalDamage ? "Won" : "Lost"}!`);
+    resultElement.appendChild(verdictText);
+
+    const msText = LogLine(0,`(${result.endTime - result.startTime} ms)`);
+    msText.classList.add("space-above");
+    resultElement.appendChild(msText);
+
     return resultElement;
 }
 

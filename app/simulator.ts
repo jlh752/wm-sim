@@ -23,6 +23,9 @@ export default class BattleRunner implements IBattleRunner {
     get state():(BattleState | undefined) {return this._state;}
     set state(value: BattleState) { this._state = value; }
 
+    static PVP_MIN_DMG:number = 1;
+    static PVE_MIN_DMG:number = 10;
+
     run(config: BattleConfig): BattleResult {
         if(this.userHasRegisteredSkills === false)
             this._skillHandler.registerDefaults();
@@ -32,16 +35,33 @@ export default class BattleRunner implements IBattleRunner {
         this.state = new BattleState(config);
 
         this.result = {
-            player1: { baseDamage: 0, totalDamage: 0 },
-            player2: { baseDamage: 0, totalDamage: 0 },
-            logs: []
+            player1: { baseDamage: 0, totalDamage: 0, power: 0 },
+            player2: { baseDamage: 0, totalDamage: 0, power: 0 },
+            logs: [],
+            startTime: performance.now(),
+            endTime: 0
         };
 
         for(const phase of PHASE_ORDER) {
             this.executePhase(phase, 0);
             this.executePhase(phase, 1);
         }
+        
+        this.result.player1.power = this.config.epicMode ? this.state.player1.baseAttack : this.state.player1.getAttack();
+        this.result.player2.power = this.config.epicMode ? this.state.player2.baseDefense : this.state.player2.getDefense();
+        const minimumAttackerDamage = this.config.epicMode ? BattleRunner.PVE_MIN_DMG : BattleRunner.PVP_MIN_DMG;
+        //choose a 'mid-point' for the base damage, epic have much less variation than pvp
+	    const baseDmgMidpoint = this.state.maxBase / (this.config.epicMode ? 2.4 + Math.random()/5 : 2 + Math.random());
+        //from the semi-random mid-point, move away from it logarithmicly based on the ratio between atk/def powers
+        //bound within max and min damage
+        const powerDifferential = 0.75*this.state.maxBase*Math.log10(this.result.player1.power/this.result.player2.power);
+        this.result.player1.baseDamage = Math.round(Math.min(Math.max(baseDmgMidpoint + powerDifferential + 1, minimumAttackerDamage), this.state.maxBase));
+	    this.result.player2.baseDamage = Math.round(Math.min(Math.max(baseDmgMidpoint - powerDifferential + 1, 1), this.state.maxBase));
 
+        this.result.player1.totalDamage = this.result.player1.baseDamage + this.state.player1.totalDamage - this.state.player2.totalHeal;
+        this.result.player2.totalDamage = this.result.player2.baseDamage + this.state.player2.totalDamage - this.state.player1.totalHeal;
+
+        this.result.endTime = performance.now();
         return this.result;
     }
 
@@ -51,7 +71,6 @@ export default class BattleRunner implements IBattleRunner {
     }
 
     executePhase(phase: BattlePhase, playerIndex:PlayerIndex): void {
-        console.log('executing', phase, 'for', playerIndex)
         if(!this.config || !this.state || !this.result)
             return;
         const player = playerIndex === 0 ? this.state.player1 : this.state.player2;
