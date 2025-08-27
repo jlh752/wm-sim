@@ -68,6 +68,7 @@ export default class BattleRunner implements IBattleRunner {
                 }
             }
         }
+        player.phaseComplete();
     }
 
     executeSkill(phase: BattlePhase, skill_id: number, unit:CurrentUnit, playerIndex:PlayerIndex): void{

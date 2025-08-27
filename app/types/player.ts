@@ -56,6 +56,8 @@ export class PlayerBattleState {
     private _data:DataFile;
     requirementsData:PlayerRequirementsData = {units:{}, types:{}, subtypes:{}};
 
+    private unitsToSummon:CurrentUnit[] = [];
+
     constructor(player:PlayerConfig, data:DataFile, ind:PlayerIndex){
         this._data = data;
         this.force = typeof player.force !== "string" ?
@@ -72,7 +74,7 @@ export class PlayerBattleState {
                 this.reinforcementConstraints[constraint.unit] = constraint.count;
             }
         }
-        
+
         this.populateRequirementsData();
         this.baseAttack = player.power;
         this.attack = player.power;
@@ -185,6 +187,17 @@ export class PlayerBattleState {
             return undefined;
         const unit = this.force.splice(slot, 1)[0];
         this.removeUnitFromRequirementsData(unit.unitId);
+    }
+    summonUnit(unit:CurrentUnit):void{
+        this.unitsToSummon.push(unit);
+    }
+
+    phaseComplete(){
+        for(let i = 0; i < this.unitsToSummon.length; i++){
+            this.force.unshift(this.unitsToSummon[i]);
+            this.addUnitToRequirementsData(this.unitsToSummon[i].unitId);
+        }
+        this.unitsToSummon= [];
     }
 
     /*

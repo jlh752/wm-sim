@@ -12,7 +12,7 @@ class SummonHandler implements ISkillHandler {
         if(ctx.config && skill.unit_id && skill.unit_id in ctx.config?.data.units!){
             const unitDef = ctx.config?.data.units[skill.unit_id];
             for(let i = 0; i < skill.summon!; i++){
-                player.addUnit({
+                player.summonUnit({
                     unitId: skill.unit_id,
                     definition: unitDef,
                     isReinforced: true
