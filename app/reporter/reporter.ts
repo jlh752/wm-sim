@@ -11,7 +11,7 @@ export function RenderAggregateBattleResult(result: IMultiBattleResult): HTMLEle
 }
 
 const OTHER_PLAYER_CLASS = 'other';
-export function RenderSingleBattleResult(result: BattleResult, data: DataFile): HTMLElement {
+export function RenderSingleBattleResult(result: BattleResult, data: DataFile, customLogTypes: Record<string, (log:Log, data:DataFile) => HTMLElement[]> = {}): HTMLElement {
     const prefixes = ["Your", "Enemy's"];
     const resultElement = document.createElement('ul');
     result.logs.forEach(log => {
@@ -114,6 +114,11 @@ export function RenderSingleBattleResult(result: BattleResult, data: DataFile): 
                     used ${data.skills[log.skill_id].name} \
                     reducing boosted enemy Defense by ${100*log.amount}%!`));
                 break;
+            default:
+                if(log.custom in customLogTypes){
+                    els.splice(-1, 0, ...customLogTypes[log.custom](log, data));
+                }
+                break;
         }
         els.forEach(el => resultElement.appendChild(el));
     });
@@ -143,7 +148,7 @@ export function RenderSingleBattleResult(result: BattleResult, data: DataFile): 
     return resultElement;
 }
 
-function LogLine(playerId:PlayerIndex, text:string):HTMLElement{
+export function LogLine(playerId:PlayerIndex, text:string):HTMLElement{
     const el = document.createElement("li");
     if(playerId === 1)
         el.classList.add(OTHER_PLAYER_CLASS);

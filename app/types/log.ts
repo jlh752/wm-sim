@@ -20,8 +20,9 @@ export const LogTypes = {
     ANTISHIELD: 'AS',
     UNBOOST_ATTACK: 'UA',
     UNBOOST_DEFENSE: 'UD',
+    CUSTOM: 'CUSTOM'
 } as const;
-export type LogType = typeof LogTypes[keyof typeof LogTypes];
+export type LogType = typeof LogTypes[keyof typeof LogTypes] | string;
 
 export interface GenericLog {
     type: LogType;
@@ -82,6 +83,8 @@ export interface AntishieldLog extends ValueLog{ type: typeof LogTypes.ANTISHIEL
 export interface UnboostAttackLog extends ValueLog{ type: typeof LogTypes.UNBOOST_ATTACK; }
 export interface UnboostDefenseLog extends ValueLog{ type: typeof LogTypes.UNBOOST_DEFENSE; }
 
+export interface CustomLog extends GenericLog{ type:typeof LogTypes.CUSTOM; custom:string; }
+
 export type Log =
     | DamageLog
     | HealLog| JamLog
@@ -99,4 +102,5 @@ export type Log =
     | ReduceLog
     | AntishieldLog
     | UnboostAttackLog
-    | UnboostDefenseLog;
+    | UnboostDefenseLog
+    | CustomLog;
