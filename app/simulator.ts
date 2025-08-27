@@ -1,9 +1,12 @@
-import type {IBattleRunner, BattleConfig, BattleResult, Force, PlayerConfig, PlayerRequirementsData, PlayerIndex, CurrentUnit, TargetSpecification, PlayerBattleState} from './types/runner';
-import {BattleState} from './types/runner';
-import type {DataFile, Unit, Skill} from './types/datafile';
-import { NormalizePlayerConfig, RoundHalfOdd, RandomRange } from './util/util';
+import type {IBattleRunner} from './types/runner';
+import { BattleConfig } from './types/config';
+import { BattleResult } from './types/result';
+import { CurrentUnit } from './types/player';
+import { BattleState } from './types/battleState';
+import type PlayerIndex from './types/util/playerIndex';
+import { NormalizePlayerConfig, Proc } from './util/util';
 import { PHASE_ORDER, BattlePhase } from './types/util/battlePhase';
-import { GenericLog, DamageLog, HealLog, LogTypes, PreventJamLog, PreventControlLog, PreventReinforcementLog, JamLog, ControlLog } from './types/log';
+import { GenericLog, LogTypes } from './types/log';
 import { ISkillHandler, SkillHandlerRegistry } from './skillhandler/skillHandler';
 
 export default class BattleRunner implements IBattleRunner {
@@ -58,7 +61,7 @@ export default class BattleRunner implements IBattleRunner {
             if(!unit.definition.skills)
                 continue;
             for(const ability of unit.definition.skills) {
-                if(this.proc(ability.chance)){
+                if(Proc(ability.chance)){
                     if(player.checkRequirements(ability.skill_id)){
                         this.executeSkill(phase, ability.skill_id, unit, playerIndex);
                     }
@@ -81,36 +84,5 @@ export default class BattleRunner implements IBattleRunner {
                 }
             }
         }
-        switch(phase){
-            case BattlePhase.SPECIAL:
-                if(skill.antiheal){}
-                if(skill.attack){}
-                if(skill.defense){}
-                if(skill.support_bonus){}
-                if(skill.reinforce){}
-                if(skill.rally){}
-                if(skill.shield){}
-                if(skill.antishield){}
-                if(skill.epic_antiheal){}
-                break;
-            case BattlePhase.MAIN:
-                if(skill.var_heal){}
-                if(skill.var_damage){}
-                if(skill.reinforce_damage){}
-                if(skill.jam_damage){}
-                if(skill.enemy_jam_damage){}
-                if(skill.jam_heal){}
-                if(skill.anti_attack){}
-                if(skill.anti_defense){}
-                if(skill.heal_damage){}
-                break;
-            default:
-                console.warn(`Unknown phase: ${phase}`);
-                break;
-        }
-    }
-
-    proc(p: number){
-        return (1-p <= Math.random());
     }
 }

@@ -1,6 +1,6 @@
 import { Skill, DefaultSkill } from "../types/datafile";
 import type { IBattleRunner } from '../types/runner';
-import { CurrentUnit, PlayerBattleState } from "../types/runner";
+import { CurrentUnit, PlayerBattleState } from "../types/player";
 import { GenericLog } from "../types/log";
 import { BattlePhase } from "../types/util/battlePhase";
 

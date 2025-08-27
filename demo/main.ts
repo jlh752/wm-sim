@@ -2,7 +2,7 @@ import '../app/index';
 import './components/switch';
 import './components/bossSelect';
 import type { BossSelect } from './components/bossSelect';
-import type { BattleConfig, PlayerConfig  } from '../app/types/runner';
+import type { BattleConfig, PlayerConfig  } from '../app/types/config';
 import { MultiOrchestrator } from '../app/orchestrator/multiOrchestrator';
 import { RenderSingleBattleResult, RenderAggregateBattleResult } from '../app/reporter/reporter';
 import BattleRunner from '../app/simulator';

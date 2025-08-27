@@ -1,4 +1,5 @@
-import type { PlayerConfig, Force, ReinforcementConstraint, CurrentUnit, TargetSpecification } from '../types/runner';
+import type { PlayerConfig, Force, ReinforcementConstraint, CurrentUnit } from '../types/runner';
+import type TargetSpecification from '../types/util/targetSpecification';
 import type { DataFile } from '../types/datafile';
 
 const FORCE_INSERT_MODE = {
@@ -102,4 +103,8 @@ export function MeetsCriteria(unit:CurrentUnit, criteria:TargetSpecification):bo
     if(criteria.target_unit && criteria.target_unit !== unit.unitId)
         return false;
     return true;
+}
+
+export function Proc(p: number){
+    return (1-p <= Math.random());
 }

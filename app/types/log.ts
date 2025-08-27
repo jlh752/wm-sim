@@ -1,4 +1,5 @@
-import type {PlayerIndex, TargetSpecification} from '../types/runner';
+import type PlayerIndex from '../types/util/playerIndex';
+import type TargetSpecification from '../types/util/targetSpecification';
 
 export const LogTypes = {
     DAMAGE: 'D',
