@@ -13,26 +13,25 @@ class ControlHandler implements ISkillHandler {
         let availableControls = skill.control!;
         const slotsToControl:number[] = [];
         
-        const targets = player.other!.force.filter(unit => (
-            MeetsCriteria(unit, {target_type: skill.unit_type, target_subtype: skill.unit_subtype, target_unit: skill.unit_id}) &&
-            !unit.definition.no_control)
+        const targets = player.other!.force.map((u,i) => ({slot:i,unit:u})).filter(unit => (
+            MeetsCriteria(unit.unit, {target_type: skill.unit_type, target_subtype: skill.unit_subtype, target_unit: skill.unit_id}) &&
+            !unit.unit.definition.no_control)
         );
 
         targets.sort(function(a,b){
-            if(a.definition.level === b.definition.level)
-                return a.unitId - b.unitId;
+            if(a.unit.definition.level === b.unit.definition.level)
+                return a.unit.unitId - b.unit.unitId;
             else
-                return (b.definition.level || 0) - (a.definition.level || 0);
+                return (b.unit.definition.level || 0) - (a.unit.definition.level || 0);
         });
-
         for(let i = 0; i < targets.length && availableControls > 0; i++){
             availableControls--;
             if(player.other!.preventControls == 0){
-                slotsToControl.push(i);
-                ctx.result?.logs.push({...baseLog, type: LogTypes.CONTROL, target_unit_id: targets[i].unitId, success: true} as ControlLog);
+                slotsToControl.push(targets[i].slot);
+                ctx.result?.logs.push({...baseLog, type: LogTypes.CONTROL, target_unit_id: targets[i].unit.unitId, success: true} as ControlLog);
             }else{
                 player.other!.preventControls--;
-                ctx.result?.logs.push({...baseLog, type: LogTypes.CONTROL, target_unit_id: targets[i].unitId, success: false} as ControlLog);
+                ctx.result?.logs.push({...baseLog, type: LogTypes.CONTROL, target_unit_id: targets[i].unit.unitId, success: false} as ControlLog);
             }
         }
 

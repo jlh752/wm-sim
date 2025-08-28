@@ -10,7 +10,6 @@ class AntiReinforceHandler implements ISkillHandler {
     applicableTags = ['antireinforce'];
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
         player.preventReinforcements += skill.antireinforce!;
-        console.log(player.preventReinforcements, skill.antireinforce);
         ctx.result?.logs.push({
             ...baseLog, type: LogTypes.PREVENT_REINFORCEMENT,
             amount: skill.antireinforce

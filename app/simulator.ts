@@ -16,7 +16,7 @@ export default class BattleRunner implements IBattleRunner {
     private _result?:BattleResult = undefined;
     private _state?:BattleState = undefined;
     private _skillHandler:SkillHandlerRegistry = new SkillHandlerRegistry();
-    private userHasRegisteredSkills = false;
+    private needDefaultSkills = true;
 
     get config():(BattleConfig | undefined) {return this._config;}
     set config(value: BattleConfig) { this._config = value; }
@@ -29,8 +29,10 @@ export default class BattleRunner implements IBattleRunner {
     static PVE_MIN_DMG:number = 10;
 
     run(config: BattleConfig): BattleResult {
-        if(this.userHasRegisteredSkills === false)
+        if(this.needDefaultSkills){
             this._skillHandler.registerDefaults();
+            this.needDefaultSkills = false;
+        }
         this.config = this.ensureDefaultConfig(config);
         config.player1 = NormalizePlayerConfig(config.player1, config.data);
         config.player2 = NormalizePlayerConfig(config.player2, config.data);
@@ -65,7 +67,7 @@ export default class BattleRunner implements IBattleRunner {
     }
 
     registerSkillHandlers(skillHandlers: ISkillHandler[]): void {
-        this.userHasRegisteredSkills = true;
+        this.needDefaultSkills = false;
         this._skillHandler.registerHandlers(skillHandlers);
     }
 

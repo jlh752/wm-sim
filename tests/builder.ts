@@ -41,6 +41,10 @@ export class TestUnitBuilder {
         this.unit.level = level;
         return this;
     }
+    isUnique(unique:boolean = true){
+        this.unit.unique = unique;
+        return this;
+    }
     isUnjammable(unjammable:boolean = true){
         this.unit.no_jam = unjammable;
         return this;
@@ -72,7 +76,7 @@ export class TestBattleBuilder {
         }
     }
 
-    isEpic(epicMode:boolean) : this{
+    isEpic(epicMode:boolean = true) : this{
         this.epicMode = epicMode;
         return this;
     }
@@ -104,9 +108,64 @@ export class TestBattleBuilder {
         }
         return this;
     }
-
+    addDamageSkill(id:number, amount:number, flurry:number = 1, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Damage", damage: amount, flurry: flurry };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addEpicDamageSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Epic Damage", epic_damage: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addHealSkill(id:number, amount:number, flurry:number = 1, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Heal", heal: amount, flurry: flurry };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addEpicHealSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Epic Heal", epic_heal: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addPreventHealSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Prevent Heal", antiheal: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addEpicPreventHealSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Epic Prevent Heal", epic_antiheal: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addJamSkill(id:number, amount:number, criteria:TargetSpecification, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Jam", jamming: amount };
+        if(criteria.target_unit) this.skills[id].unit_id = criteria.target_unit;
+        if(criteria.target_type) this.skills[id].unit_type = criteria.target_type;
+        if(criteria.target_subtype) this.skills[id].unit_subtype = criteria.target_subtype;
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addPreventJamSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Prevent Jam", antijam: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
     addReinforcementSkill(id:number, amount:number, criteria:TargetSpecification, modifier?:SkillModifierFuction): this {
-        this.skills[id] = { name: `Reinforce`, reinforce: amount };
+        this.skills[id] = { name: "Reinforce", reinforce: amount };
+        if(criteria.target_unit) this.skills[id].unit_id = criteria.target_unit;
+        if(criteria.target_type) this.skills[id].unit_type = criteria.target_type;
+        if(criteria.target_subtype) this.skills[id].unit_subtype = criteria.target_subtype;
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addPreventReinforcementSkill(id:number, amount:number, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Prevent Reinforcement", antireinforce: amount };
+        if(modifier) this.skills[id] = modifier(this.skills[id]);
+        return this;
+    }
+    addControlSkill(id:number, amount:number, criteria:TargetSpecification, modifier?:SkillModifierFuction): this {
+        this.skills[id] = { name: "Control", control: amount };
         if(criteria.target_unit) this.skills[id].unit_id = criteria.target_unit;
         if(criteria.target_type) this.skills[id].unit_type = criteria.target_type;
         if(criteria.target_subtype) this.skills[id].unit_subtype = criteria.target_subtype;

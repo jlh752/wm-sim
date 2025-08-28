@@ -2,6 +2,7 @@ import PlayerIndex from "./util/playerIndex";
 import { DataFile, Unit } from "./datafile";
 import { PlayerConfig } from "./config";
 import { RoundHalfOdd } from "../util/util";
+import { UNIT_MULTIPLIER } from "../util/magicNumbers";
 
 
 export interface PlayerRequirementsData {
@@ -61,10 +62,10 @@ export class PlayerBattleState {
     constructor(player:PlayerConfig, data:DataFile, ind:PlayerIndex){
         this._data = data;
         this.force = typeof player.force !== "string" ?
-            player.force.units.map(u => ({unitId: u, definition: this._data.units[u]})) :
+            player.force.units.filter(u => u in data.units).map(u => ({unitId: u, definition: this._data.units[u]})) :
             []
         this.reinforcements = typeof player.force !== "string" ?
-            player.force.reinforcements.map(u => ({unitId: u, definition: this._data.units[u]})) :
+            player.force.reinforcements.filter(u => u in data.units).map(u => ({unitId: u, definition: this._data.units[u]})) :
             [];
 
         this.reinforcementConstraints = {};
@@ -76,12 +77,12 @@ export class PlayerBattleState {
         }
 
         this.populateRequirementsData();
-        this.baseAttack = player.power;
-        this.attack = player.power;
-        this.addAttack(10*this.force.reduce((atk,u) => atk + (u.definition.attack || 0), 0));
-        this.baseDefense = player.power;
-        this.defense = player.power;
-        this.addDefense(10*this.force.reduce((def,u) => def + (u.definition.defense || 0), 0));
+        const unitContributionAttack = UNIT_MULTIPLIER*this.force.reduce((atk,u) => atk + (u.definition.attack || 0), 0);
+        this.baseAttack = player.power + unitContributionAttack;
+        this.attack = this.baseAttack;
+        const unitContributionDefense = UNIT_MULTIPLIER*this.force.reduce((def,u) => def + (u.definition.defense || 0), 0);
+        this.baseDefense = player.power + unitContributionDefense;
+        this.defense = this.baseDefense;
         this.index = ind;
     }
 
@@ -89,7 +90,6 @@ export class PlayerBattleState {
         let multiplier = 1, addedDamage = 0;
         const antishield = this.antishield;
 	    const reduction = Math.max(this.shield-antishield, 0);
-
         if(value !== 0){
             multiplier += this.unitModifiers[unit.unitId]?.multiplier || 0;
             addedDamage += this.subtypeModifiers[unit.unitId]?.fixed || 0;
@@ -106,7 +106,6 @@ export class PlayerBattleState {
                 addedDamage += this.subtypeModifiers[unit.definition.sub_type2]?.fixed || 0;
                 multiplier += this.subtypeModifiers[unit.definition.sub_type2]?.multiplier || 0;
             }
-
             const totalDamage = RoundHalfOdd(value*multiplier + addedDamage + reduction);
             for(let i = 0; i < flurry; i++){
                 this.totalDamage += totalDamage;
@@ -118,13 +117,7 @@ export class PlayerBattleState {
     }
 
     addHeal(value:number, flurry:number = 0): {value:number, prevented:number}{
-        const totalHealing = RoundHalfOdd(value);
-        if(totalHealing !== 0){
-            for(let i = 0; i < flurry; i++){
-                this.totalHeal += totalHealing;
-            }
-        }
-
+        const totalHealing = RoundHalfOdd(value)*(flurry || 1);
         if(totalHealing > 0 && this.other){
             const preventHeal = this.other.preventHeal || 0;
             if(preventHeal > totalHealing){
@@ -133,10 +126,12 @@ export class PlayerBattleState {
             }else{
                 const adjustedHeal = totalHealing - this.other.preventHeal;
                 this.other.preventHeal = 0;
+                this.totalHeal += adjustedHeal;
                 return {value: adjustedHeal, prevented: preventHeal};
             }
         }
 
+        this.totalHeal += totalHealing;
         return {value: totalHealing, prevented: 0};
     }
 
@@ -192,6 +187,7 @@ export class PlayerBattleState {
             return undefined;
         const unit = this.force.splice(slot, 1)[0];
         this.removeUnitFromRequirementsData(unit.unitId);
+        return unit;
     }
     summonUnit(unit:CurrentUnit):void{
         this.unitsToSummon.push(unit);
