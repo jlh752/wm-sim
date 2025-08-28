@@ -17,6 +17,8 @@ type FORCE_INSERT_MODE = typeof FORCE_INSERT_MODE[keyof typeof FORCE_INSERT_MODE
     * @returns The normalized PlayerConfig.
 */
 export function NormalizePlayerConfig(config:PlayerConfig, data:DataFile): PlayerConfig {
+    if(!config) return config;
+
     if (typeof config.force === 'string') {
         const newForce:Force = {
             version: 1,
@@ -31,9 +33,8 @@ export function NormalizePlayerConfig(config:PlayerConfig, data:DataFile): Playe
         const parts = config.force.split(',').map(x => parseInt(x));
         if(parts.length > 1){//has at least version and formation
             newForce.version = parts[0];
-            newForce.units.push(7000+parts[1]);
             const boostType = Object.keys(data.types).map(k => parseInt(k)).find(k => data.types[k].name === "Boost");
-            for(let i = 2; i < parts.length; i++){
+            for(let i = 1; i < parts.length; i++){
                 const id = parts[i];
                 if(mode !== FORCE_INSERT_MODE.REINFORCEMENTS){
                     const unitType = data.units[id]?.type;

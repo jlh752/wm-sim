@@ -23,13 +23,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         var formData = new FormData(document.getElementById("battle-config")! as HTMLFormElement);
-        // output as an object
-        console.log(Object.fromEntries(formData));
-
-        // ...or iterate through the name-value pairs
-        for (var pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-        }
         const config:BattleConfig = {
             player1: {
                 force: (document.getElementById('force1')! as HTMLTextAreaElement).value,
@@ -66,11 +59,19 @@ function LoadData(file: string): Promise<any> {
 function Battle(config:BattleConfig){
     //const runner = new MultiOrchestrator(config);
     //const result = runner.run(1);
+    const startTime = performance.now();
     const sim = new BattleRunner();
     const result = sim.run(config);
+    const endTime = performance.now();
+    console.info("Execution time:", endTime - startTime, 'ms');
     const output = RenderSingleBattleResult(result, config.data);
     console.log(result);
     console.log(output);
+
+    const msText = document.createElement('li');
+    msText.innerText = `(${endTime - startTime} ms)`;
+    msText.classList.add("space-above");
+    output.appendChild(msText);
     document.body.appendChild(output);
     console.log('Battle executed with config:', config);
     /*

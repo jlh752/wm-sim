@@ -9,10 +9,9 @@ export interface UnitSkill {
     chance: number;
 }
 export interface Unit {
-    id: number;
     name: string;
     unique?: boolean | number;
-    type: keyof DataFile["types"];
+    type?: keyof DataFile["types"];
     sub_type?: keyof DataFile["subtypes"];
     sub_type2?: keyof DataFile["subtypes"];
     attack?: number;

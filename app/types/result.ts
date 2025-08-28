@@ -10,6 +10,4 @@ export interface BattleResult {
     player1: PlayerResult;
     player2: PlayerResult;
     logs: Log[];
-    startTime: number;
-    endTime: number;
 }

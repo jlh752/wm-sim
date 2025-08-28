@@ -1,5 +1,5 @@
 import type {IBattleRunner} from './types/runner';
-import { BattleConfig } from './types/config';
+import { BattleConfig, Force, PlayerConfig } from './types/config';
 import { BattleResult } from './types/result';
 import { CurrentUnit } from './types/player';
 import { BattleState } from './types/battleState';
@@ -8,6 +8,8 @@ import { NormalizePlayerConfig, Proc } from './util/util';
 import { PHASE_ORDER, BattlePhase } from './types/util/battlePhase';
 import { GenericLog, LogTypes } from './types/log';
 import { ISkillHandler, SkillHandlerRegistry } from './skillhandler/skillHandler';
+import { DataFile } from './types/datafile';
+import { DEFAULT_POWER, MAGIC_LEVEL } from './util/magicNumbers';
 
 export default class BattleRunner implements IBattleRunner {
     private _config?:BattleConfig = undefined;
@@ -29,17 +31,15 @@ export default class BattleRunner implements IBattleRunner {
     run(config: BattleConfig): BattleResult {
         if(this.userHasRegisteredSkills === false)
             this._skillHandler.registerDefaults();
+        this.config = this.ensureDefaultConfig(config);
         config.player1 = NormalizePlayerConfig(config.player1, config.data);
         config.player2 = NormalizePlayerConfig(config.player2, config.data);
-        this.config = config;
         this.state = new BattleState(config);
 
         this.result = {
             player1: { baseDamage: 0, totalDamage: 0, power: 0 },
             player2: { baseDamage: 0, totalDamage: 0, power: 0 },
-            logs: [],
-            startTime: performance.now(),
-            endTime: 0
+            logs: []
         };
 
         for(const phase of PHASE_ORDER) {
@@ -61,7 +61,6 @@ export default class BattleRunner implements IBattleRunner {
         this.result.player1.totalDamage = this.result.player1.baseDamage + this.state.player1.totalDamage - this.state.player2.totalHeal;
         this.result.player2.totalDamage = this.result.player2.baseDamage + this.state.player2.totalDamage - this.state.player1.totalHeal;
 
-        this.result.endTime = performance.now();
         return this.result;
     }
 
@@ -104,5 +103,44 @@ export default class BattleRunner implements IBattleRunner {
                 }
             }
         }
+    }
+
+    private ensureDefaultConfig(config:BattleConfig):BattleConfig{
+        if(!config.player1)
+            config.player1 = {} as PlayerConfig;
+        if(!config.player1.force)
+            config.player1.force = {} as Force;
+        if(typeof config.player1.force !== "string"){
+            if(!config.player1.force.units)
+                config.player1.force.units = [];
+            if(!config.player1.force.reinforcements)
+                config.player1.force.reinforcements = [];
+        }
+        if(!config.player1.power)
+            config.player1.power = DEFAULT_POWER;
+
+        if(!config.player2)
+            config.player2 = {} as PlayerConfig;
+        if(!config.player2.force)
+            config.player2.force = {} as Force;
+        if(typeof config.player2.force !== "string"){
+            if(!config.player2.force.units)
+                config.player2.force.units = [];
+            if(!config.player2.force.reinforcements)
+                config.player2.force.reinforcements = [];
+        }
+        if(!config.player2.power)
+            config.player2.power = DEFAULT_POWER;
+        if(!config.player2.level)
+            config.player2.level = MAGIC_LEVEL;
+
+        config.epicMode = config.epicMode || false;
+        if(!config.data)
+            config.data = {} as DataFile;
+        if(!config.data.units) config.data.units = [];
+        if(!config.data.skills) config.data.skills = [];
+        if(!config.data.types) config.data.types = [];
+        if(!config.data.subtypes) config.data.subtypes = [];
+        return config;
     }
 }

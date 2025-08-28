@@ -92,11 +92,12 @@ export class PlayerBattleState {
 
         if(value !== 0){
             multiplier += this.unitModifiers[unit.unitId]?.multiplier || 0;
-            multiplier += this.typeModifiers[unit.definition.type]?.multiplier || 0;
-
             addedDamage += this.subtypeModifiers[unit.unitId]?.fixed || 0;
-            addedDamage += this.typeModifiers[unit.unitId]?.fixed || 0;
 
+            if(unit.definition.type){
+                addedDamage += this.typeModifiers[unit.definition.type]?.fixed || 0;
+                multiplier += this.typeModifiers[unit.definition.type]?.multiplier || 0;
+            }
             if(unit.definition.sub_type){
                 addedDamage += this.subtypeModifiers[unit.definition.sub_type]?.fixed || 0;
                 multiplier += this.subtypeModifiers[unit.definition.sub_type]?.multiplier || 0;

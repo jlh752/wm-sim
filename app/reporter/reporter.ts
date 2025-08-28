@@ -141,10 +141,6 @@ export function RenderSingleBattleResult(result: BattleResult, data: DataFile, c
     const verdictText = LogLine(0,`You ${result.player1.totalDamage >= result.player2.totalDamage ? "Won" : "Lost"}!`);
     resultElement.appendChild(verdictText);
 
-    const msText = LogLine(0,`(${result.endTime - result.startTime} ms)`);
-    msText.classList.add("space-above");
-    resultElement.appendChild(msText);
-
     return resultElement;
 }
 
