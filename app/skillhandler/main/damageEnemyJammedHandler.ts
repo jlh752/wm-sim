@@ -11,7 +11,7 @@ class DamageEnemyJammedHandler implements ISkillHandler {
     applicableTags = ['enemy_jam_damage'];
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
         const count = player.other!.jammed || 0;
-        const damageValue = count * (RandomRange(100*0.5*skill.jam_damage!, 100*1.5*skill.jam_damage!)/100);
+        const damageValue = count * (RandomRange(100*0.5*skill.enemy_jam_damage!, 100*1.5*skill.enemy_jam_damage!)/100);
         const resultDamage = player.addDamage(unit, skill.damage_cap ? Math.min(skill.damage_cap, damageValue) : damageValue, skill.flurry || 1);
         if(resultDamage.value !== 0){
             ctx.result?.logs.push({

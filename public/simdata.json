@@ -1161,7 +1161,7 @@
         "374": {"name":"Subversion","damage":8,"jamming":1,"unit_type":2, "antireinforce":1,"antishield":1},
         "375": {"name":"Beamscatter","reinforce":1,"unit_subtype":7,"epic_damage":10},
         "376": {"name":"Consume","jamming":5,"unit_type":2},
-        "377": {"name":"Devour","jam_damage":3,"damage_cap":60},
+        "377": {"name":"Devour","enemy_jam_damage":3,"damage_cap":60},
         "378": {"name":"Gunslave","damage":25,"reinforce":2,"unit_type":1},
         "379": {"name":"Aurablast","damage":25,"antijam":1},
         "380": {"name":"Impenetrable Armor","defense":0.15},

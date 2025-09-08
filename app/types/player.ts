@@ -89,7 +89,7 @@ export class PlayerBattleState {
     addDamage(unit:CurrentUnit, value:number, flurry: number = 0): {value:number, added:number, reduced:number}{
         let multiplier = 1, addedDamage = 0;
         const antishield = this.antishield;
-	    const reduction = Math.max(this.shield-antishield, 0);
+	    const reduction = Math.max(this.other!.shield-antishield, 0);
         if(value !== 0){
             multiplier += this.unitModifiers[unit.unitId]?.multiplier || 0;
             addedDamage += this.subtypeModifiers[unit.unitId]?.fixed || 0;
@@ -106,7 +106,7 @@ export class PlayerBattleState {
                 addedDamage += this.subtypeModifiers[unit.definition.sub_type2]?.fixed || 0;
                 multiplier += this.subtypeModifiers[unit.definition.sub_type2]?.multiplier || 0;
             }
-            const totalDamage = RoundHalfOdd(value*multiplier + addedDamage + reduction);
+            const totalDamage = RoundHalfOdd(value*multiplier + addedDamage - reduction);
             for(let i = 0; i < flurry; i++){
                 this.totalDamage += totalDamage;
             }
@@ -144,7 +144,7 @@ export class PlayerBattleState {
 
     //multipliers stack additively instead of multiplicatively
     private alterModifier(id:number, key:('unitModifiers'|'typeModifiers'|'subtypeModifiers'), value:{fixed?:number,multiplier?:number}){
-        if(!('id' in this[key]))
+        if(!(id in this[key]))
             this[key][id] = {multiplier:0,fixed:0};
         this[key][id].multiplier += value.multiplier ?? 0;
         this[key][id].fixed += value.fixed ?? 0;
@@ -208,7 +208,7 @@ export class PlayerBattleState {
     */
     populateRequirementsData(){
         this.requirementsData = {units:{}, types: {}, subtypes:{}};
-        for(const t in this._data)
+        for(const t in this._data.types)
             this.requirementsData.types[t] = 0;
         for(const st in this._data.subtypes)
             this.requirementsData.subtypes[st] = 0;

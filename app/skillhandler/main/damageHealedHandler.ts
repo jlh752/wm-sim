@@ -11,7 +11,7 @@ class DamageHealedHandler implements ISkillHandler {
     applicableTags = ['heal_damage'];
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
         const count = player.totalHeal || 0;
-        const damageValue = count * (RandomRange(1000*0.5*skill.jam_damage!, 1000*1.5*skill.jam_damage!)/1000);
+        const damageValue = count * (RandomRange(1000*0.5*skill.heal_damage!, 1000*1.5*skill.heal_damage!)/1000);
         const resultDamage = player.addDamage(unit, skill.damage_cap ? Math.min(skill.damage_cap, damageValue) : damageValue, skill.flurry || 1);
         if(resultDamage.value !== 0){
             ctx.result?.logs.push({

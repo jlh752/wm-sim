@@ -99,7 +99,7 @@ export default class BattleRunner implements IBattleRunner {
         const genericLog:GenericLog = {type:LogTypes.DAMAGE, skill_id: skill_id, player_id: playerIndex, unit_id: unit.unitId, is_reinforced: unit.isReinforced};
         const applicableHandlers = this._skillHandler.getHandlers(phase);
         for(const handler in applicableHandlers){
-            if(handler in skill){
+            if(handler in skill || (skill.custom && handler in skill.custom)){
                 for(let i = 0; i < applicableHandlers[handler].length; i++){
                     applicableHandlers[handler][i].handler(this, skill, player, unit, genericLog);
                 }

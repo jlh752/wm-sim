@@ -9,7 +9,7 @@ class UnboostAttackHandler implements ISkillHandler {
     applicablePhase = BattlePhase.MAIN;
     applicableTags = ['anti_attack'];
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
-        player.unboostAttack(skill.anti_attack!);
+        player.other!.unboostAttack(skill.anti_attack!);
         ctx.result?.logs.push({
             ...baseLog, type: LogTypes.UNBOOST_ATTACK,
             amount: skill.anti_attack

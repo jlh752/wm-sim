@@ -1,1 +1,2 @@
-console.log('hi');
+import BattleRunner from './simulator';
+export default BattleRunner;
