@@ -10,4 +10,5 @@
     "resolveJsonModule": true
   },
   "include": ["app/**/*", "demo/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

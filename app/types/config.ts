@@ -11,7 +11,7 @@ export type ReinforcementConstraint = {
     count: number
 };
 
-export interface  PlayerConfig {
+export interface PlayerConfig {
     force: Force | string;
     power: number;
     level?: number;

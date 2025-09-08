@@ -1,2 +1,4 @@
 import BattleRunner from './simulator';
-export default BattleRunner;
+import {MultiOrchestrator} from './orchestrator/multiOrchestrator';
+import {RenderSingleBattleResult} from './reporter/reporter';
+export {BattleRunner,MultiOrchestrator,RenderSingleBattleResult};

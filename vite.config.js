@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
-  root: 'demo',
   publicDir: '../public',
-  plugins: [],
+  plugins: [dts({
+      insertTypesEntry: true,
+      rollupTypes: true,
+    })],
   build: {
     lib: {
       entry: 'app/index.ts',

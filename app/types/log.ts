@@ -83,7 +83,7 @@ export interface AntishieldLog extends ValueLog{ type: typeof LogTypes.ANTISHIEL
 export interface UnboostAttackLog extends ValueLog{ type: typeof LogTypes.UNBOOST_ATTACK; }
 export interface UnboostDefenseLog extends ValueLog{ type: typeof LogTypes.UNBOOST_DEFENSE; }
 
-export interface CustomLog extends GenericLog{ type:typeof LogTypes.CUSTOM; custom:string; }
+export interface CustomLog extends GenericLog{ type:typeof LogTypes.CUSTOM; custom:string; data:any; }
 
 export type Log =
     | DamageLog

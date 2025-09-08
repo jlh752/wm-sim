@@ -71,8 +71,6 @@ export interface Skill<TCustomAttributes = {}> extends DefaultSkillsAttributes{
     unit_subtype?: number;
     unit_id?: number;
 
-    isValid?: boolean;//valid per player
-
     custom?: TCustomAttributes;
 }
 

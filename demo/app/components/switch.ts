@@ -75,7 +75,7 @@ export class ToggleSwitch extends HTMLElement {
         this.removeEventListener('click', this.toggle);
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
+    attributeChangedCallback(name:string, oldValue:string, newValue:string) {
         switch (name) {
             case 'checked':
                 this.setAttribute('aria-checked', this.checked.toString());
@@ -116,7 +116,7 @@ export class ToggleSwitch extends HTMLElement {
         this._internals.setFormValue(this.checked ? "on" : null);
     }
 
-    formDisabledCallback(disabled) {
+    formDisabledCallback(disabled:boolean) {
         if (disabled) {
             this.setAttribute('disabled', '');
         } else {
@@ -126,7 +126,7 @@ export class ToggleSwitch extends HTMLElement {
     formResetCallback() {
         this.checked = false;
     }
-    formStateRestoreCallback(state) {
+    formStateRestoreCallback(state:string) {
         this.checked = state === "on";
     }
 }

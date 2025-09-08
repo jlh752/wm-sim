@@ -1,4 +1,4 @@
-import type { BossesFile, Boss } from '../types/boss';
+import type { BossesFile, Boss } from '../../types/boss';
 
 class BossSelect extends HTMLSelectElement {
     static elementName = 'boss-select';
@@ -9,7 +9,7 @@ class BossSelect extends HTMLSelectElement {
         super();
     }
 
-    async attributeChangedCallback(name, oldValue, newValue) {
+    async attributeChangedCallback(name:string, oldValue:string, newValue:string) {
         if(name === 'data-file') {
             this.bosses = await this.loadData(newValue);
             this.renderSelect();
