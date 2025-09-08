@@ -122,3 +122,5 @@ The format for a force code is
 where all the units after the boosts are reinforcements. a number less than 10 in a unit slot is ignored.
 
 Rather than creating this by hand, you can use a [drag-and-drop tool] (https://github.com/jlh752/wm-force-editor).
+
+![Tests](https://github.com/jlh752/wm-sim/actions/workflows/tests.yml/badge.svg)
