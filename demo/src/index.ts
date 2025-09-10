@@ -57,8 +57,6 @@ function LoadData(file: string): Promise<any> {
 }
 
 function Battle(config:BattleConfig){
-    //const runner = new MultiOrchestrator(config);
-    //const result = runner.run(1);
     const startTime = performance.now();
     const sim = new BattleRunner();
     const result = sim.run(config);
