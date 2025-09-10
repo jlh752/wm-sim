@@ -1,7 +1,7 @@
 
 # War Metal Battle Simulator (wm-sim) 
 
-[Tests](https://github.com/jlh752/wm-sim/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/jlh752/wm-sim/actions/workflows/tests.yml/badge.svg)
 
 A Typescript library that simulates battles for the now-discontinued browser game War Metal.
 
