@@ -1,11 +1,14 @@
 {
   "name": "wm-sim",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "private": false,
   "description": "War Metal Battle Simulator",
-  "directories": {
-    "test": "test"
-  },
+  "keywords": ["game", "simulator", "war metal", "war machine"],
   "type": "module",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "license:": "MIT",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,13 +16,19 @@
       "require": "./dist/wm-sim.cjs.js"
     }
   },
+  "files": [
+    "/dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite --config vite.demo.config.js",
     "build": "vite build",
     "build:demo": "vite build --config vite.demo.config.js",
-    "preview": "vite preview",
     "test": "vitest",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -28,6 +37,7 @@
   "homepage": "https://github.com/jlh752/wm-sim#readme",
   "devDependencies": {
     "@vitejs/plugin-legacy": "^6.1.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
     "vite": "^6.3.5",

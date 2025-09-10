@@ -1,11 +1,11 @@
-import '../../app/index';
+import '../../src/index';
 import './components/switch';
 import './components/bossSelect';
 import type { BossSelect } from './components/bossSelect';
-import type { BattleConfig, PlayerConfig  } from '../../app/types/config';
-import { MultiOrchestrator } from '../../app/orchestrator/multiOrchestrator';
-import { RenderSingleBattleResult, RenderAggregateBattleResult } from '../../app/reporter/reporter';
-import BattleRunner from '../../app/simulator';
+import type { BattleConfig, PlayerConfig  } from '../../src/types/config';
+import { MultiOrchestrator } from '../../src/orchestrator/multiOrchestrator';
+import { RenderSingleBattleResult, RenderAggregateBattleResult } from '../../src/reporter/reporter';
+import BattleRunner from '../../src/simulator';
 
 window.addEventListener('DOMContentLoaded', async () => {
     const data = await LoadData('simdata.json');

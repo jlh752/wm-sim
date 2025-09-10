@@ -1,9 +1,9 @@
-import { BattleConfig, Force } from "../app/types/config";
-import type {PlayerConfig, ReinforcementConstraint} from "../app/types/config";
-import { Skill, SubType, Type, Unit } from "../app/types/datafile";
-import PlayerIndex from "../app/types/util/playerIndex";
-import TargetSpecification from "../app/types/util/targetSpecification";
-import { DEFAULT_POWER, MAGIC_LEVEL } from "../app/util/magicNumbers";
+import { BattleConfig, Force } from "../src/types/config";
+import type {PlayerConfig, ReinforcementConstraint} from "../src/types/config";
+import { Skill, SubType, Type, Unit } from "../src/types/datafile";
+import PlayerIndex from "../src/types/util/playerIndex";
+import TargetSpecification from "../src/types/util/targetSpecification";
+import { DEFAULT_POWER, MAGIC_LEVEL } from "../src/util/magicNumbers";
 import T from './constants';
 
 export class TestUnitBuilder {

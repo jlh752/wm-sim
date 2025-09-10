@@ -1,12 +1,12 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import BattleRunner from '../app/simulator';
-import type { BattleConfig } from '../app/types/config';
-import { DEFAULT_POWER, MAGIC_LEVEL, UNIT_MULTIPLIER } from '../app/util/magicNumbers';
+import {BattleRunner} from '../src/index';
+import type { BattleConfig } from '../src/types/config';
+import { DEFAULT_POWER, MAGIC_LEVEL, UNIT_MULTIPLIER } from '../src/util/magicNumbers';
 import { TestBattleBuilder } from './builder';
 import T from './constants';
-import { RoundHalfOdd } from '../app/util/util';
-import { ISkillHandler } from '../app/skillhandler/skillHandler';
-import { BattlePhase } from '../app/types/util/battlePhase';
+import { RoundHalfOdd } from '../src/index';
+import { ISkillHandler } from '../src/skillhandler/skillHandler';
+import { BattlePhase } from '../src/types/util/battlePhase';
 
 describe('Simulation Functions', function(){
     beforeEach(() => vi.restoreAllMocks());

@@ -1,5 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {RandomRange, Proc, RoundHalfOdd} from '../app/util/util';
+import {RandomRange, Proc, RoundHalfOdd, NormalizePlayerConfig} from '../src/index';
+import { DataFile } from '../src/types/datafile';
+import { PlayerConfig, Force, ReinforcementConstraint } from '../src/types/config';
 
 describe('Helper Functions', function(){
     beforeEach(() => vi.restoreAllMocks());
@@ -75,4 +77,49 @@ describe('Helper Functions', function(){
             }
         );
 	});
+
+    
+	describe('normalize force', function(){
+        const unitId = 2;
+        const datafile = {
+            units: {[unitId]:{name:"Unit1"}},
+            skills: {},
+            types: {
+                7: {name: "Boost"}
+            },
+            subtypes: {}
+        } as DataFile;
+
+        it('should generate a basic force', function(){
+			const cfg = NormalizePlayerConfig({
+                force: `1,${unitId}`
+            } as PlayerConfig, datafile);
+            expect(typeof cfg.force).toBe("object");
+            const force = cfg.force as Force;
+            expect(force.units.length).toBe(1);
+            expect(force.units[0]).toBe(unitId);
+		});
+        
+        it('should generate reinforcements', function(){
+			const cfg = NormalizePlayerConfig({
+                force: `1,0,${unitId}`
+            } as PlayerConfig, datafile);
+            expect(typeof cfg.force).toBe('object');
+            const force = cfg.force as Force;
+            expect(force.reinforcements.length).toBe(1);
+            expect(force.reinforcements[0]).toBe(unitId);
+		});
+        
+        it('should parse reinforcement constraints', function(){
+            const unitCount = 10;
+			const cfg = NormalizePlayerConfig({
+                force: `1,0,${unitId}`,
+                reinforcementConstraints: `${unitId}|${unitCount}`
+            } as PlayerConfig, datafile);
+            expect(Array.isArray(cfg.reinforcementConstraints)).toBe(true);
+            const reConstraints = cfg.reinforcementConstraints as ReinforcementConstraint[];
+            expect(reConstraints[0].unit).toBe(unitId);
+            expect(reConstraints[0].count).toBe(unitCount);
+		});
+    });
 });

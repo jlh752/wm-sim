@@ -46,7 +46,7 @@ export function NormalizePlayerConfig(config:PlayerConfig, data:DataFile): Playe
                         }
                     }
                 }
-                if(id > 10){//any id less than 10 is a place holder, regrettable design choice in the force code syntax
+                if(id in data.units){
                     if(mode === FORCE_INSERT_MODE.REINFORCEMENTS)
                         newForce.reinforcements.push(id);
                     else

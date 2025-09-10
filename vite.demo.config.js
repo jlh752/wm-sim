@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [],
   build: {
     lib: {
-      entry: 'app/index.ts',
+      entry: 'src/index.ts',
       name: 'wm-sim',
       fileName: (format) => `wm-sim.${format}.js`
     },
