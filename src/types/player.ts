@@ -1,0 +1,266 @@
+import PlayerIndex from "./util/playerIndex";
+import { DataFile, Unit } from "./datafile";
+import { PlayerConfig } from "./config";
+import { RoundHalfOdd } from "../util/util";
+import { UNIT_MULTIPLIER } from "../util/magicNumbers";
+
+
+export interface PlayerRequirementsData {
+    units:Record<number|string,number>;
+    types:Record<number|string,number>;
+    subtypes:Record<number|string,number>;
+}
+
+interface DamageModifier {
+    multiplier:number;
+    fixed:number;
+}
+
+export interface CurrentUnit {
+    unitId:number;
+    definition:Unit;
+    isReinforced?:boolean;
+}
+
+export class PlayerBattleState {
+    other?: PlayerBattleState = undefined;
+    index: PlayerIndex;
+    force: CurrentUnit[];
+    reinforcements: CurrentUnit[];
+    reinforcementConstraints:Record<number,number>;
+
+    baseAttack:number;
+    private attack:number;
+    unboostAttackMultiplier:number = 1;
+    baseDefense:number;
+    private defense:number;
+    unboostDefenseMultiplier:number = 1;
+    
+    preventHeal:number = 0;
+    preventJams:number = 0;
+    preventReinforcements:number = 0;
+    preventControls:number = 0;
+
+    jammed:number = 0;
+    reinforced:number = 0;
+
+    shield:number = 0;
+    antishield:number = 0;
+
+    totalDamage:number = 0;
+    totalHeal:number = 0;
+
+    unitModifiers: Record<number,DamageModifier> = {};
+    typeModifiers:Record<number,DamageModifier> = {};
+    subtypeModifiers:Record<number,DamageModifier> = {};
+
+    private _data:DataFile;
+    requirementsData:PlayerRequirementsData = {units:{}, types:{}, subtypes:{}};
+
+    private unitsToSummon:CurrentUnit[] = [];
+
+    constructor(player:PlayerConfig, data:DataFile, ind:PlayerIndex){
+        this._data = data;
+        this.force = typeof player.force !== "string" ?
+            player.force.units.filter(u => u in data.units).map(u => ({unitId: u, definition: this._data.units[u]})) :
+            []
+        this.reinforcements = typeof player.force !== "string" ?
+            player.force.reinforcements.filter(u => u in data.units).map(u => ({unitId: u, definition: this._data.units[u]})) :
+            [];
+
+        this.reinforcementConstraints = {};
+        if(player.reinforcementConstraints && typeof player.reinforcementConstraints !== 'string'){
+            for(let i = 0; i < player.reinforcementConstraints.length; i++){
+                const constraint = player.reinforcementConstraints[i];
+                this.reinforcementConstraints[constraint.unit] = constraint.count;
+            }
+        }
+
+        this.populateRequirementsData();
+        const unitContributionAttack = UNIT_MULTIPLIER*this.force.reduce((atk,u) => atk + (u.definition.attack || 0), 0);
+        this.baseAttack = player.power + unitContributionAttack;
+        this.attack = this.baseAttack;
+        const unitContributionDefense = UNIT_MULTIPLIER*this.force.reduce((def,u) => def + (u.definition.defense || 0), 0);
+        this.baseDefense = player.power + unitContributionDefense;
+        this.defense = this.baseDefense;
+        this.index = ind;
+    }
+
+    addDamage(unit:CurrentUnit, value:number, flurry: number = 0): {value:number, added:number, reduced:number}{
+        let multiplier = 1, addedDamage = 0;
+        const antishield = this.antishield;
+	    const reduction = Math.max(this.other!.shield-antishield, 0);
+        if(value !== 0){
+            multiplier += this.unitModifiers[unit.unitId]?.multiplier || 0;
+            addedDamage += this.subtypeModifiers[unit.unitId]?.fixed || 0;
+
+            if(unit.definition.type){
+                addedDamage += this.typeModifiers[unit.definition.type]?.fixed || 0;
+                multiplier += this.typeModifiers[unit.definition.type]?.multiplier || 0;
+            }
+            if(unit.definition.sub_type){
+                addedDamage += this.subtypeModifiers[unit.definition.sub_type]?.fixed || 0;
+                multiplier += this.subtypeModifiers[unit.definition.sub_type]?.multiplier || 0;
+            }
+            if(unit.definition.sub_type2){
+                addedDamage += this.subtypeModifiers[unit.definition.sub_type2]?.fixed || 0;
+                multiplier += this.subtypeModifiers[unit.definition.sub_type2]?.multiplier || 0;
+            }
+            const totalDamage = RoundHalfOdd(value*multiplier + addedDamage - reduction);
+            for(let i = 0; i < flurry; i++){
+                this.totalDamage += totalDamage;
+            }
+
+            return {value: totalDamage, added: addedDamage, reduced: reduction};
+        }
+        return {value: 0, added: 0, reduced: 0};
+    }
+
+    addHeal(value:number, flurry:number = 0): {value:number, prevented:number}{
+        const totalHealing = RoundHalfOdd(value)*(flurry || 1);
+        if(totalHealing > 0 && this.other){
+            const preventHeal = this.other.preventHeal || 0;
+            if(preventHeal > totalHealing){
+                this.other.preventHeal -= totalHealing;
+                return {value: 0, prevented: totalHealing};
+            }else{
+                const adjustedHeal = totalHealing - this.other.preventHeal;
+                this.other.preventHeal = 0;
+                this.totalHeal += adjustedHeal;
+                return {value: adjustedHeal, prevented: preventHeal};
+            }
+        }
+
+        this.totalHeal += totalHealing;
+        return {value: totalHealing, prevented: 0};
+    }
+
+    addUnitModifier(id:number, value:number){this.alterModifier(id, 'unitModifiers', {fixed:value});}
+    multiplyUnitModifier(id:number, value:number){this.alterModifier(id, 'unitModifiers', {multiplier:value});}
+    addTypeModifier(id:number, value:number){this.alterModifier(id, 'typeModifiers', {fixed:value});}
+    multiplyTypeModifier(id:number, value:number){this.alterModifier(id, 'typeModifiers', {multiplier:value});}
+    addSubtypeModifier(id:number, value:number){this.alterModifier(id, 'subtypeModifiers', {fixed:value});}
+    multiplySubtypeModifier(id:number, value:number){this.alterModifier(id, 'subtypeModifiers', {multiplier:value});}
+
+    //multipliers stack additively instead of multiplicatively
+    private alterModifier(id:number, key:('unitModifiers'|'typeModifiers'|'subtypeModifiers'), value:{fixed?:number,multiplier?:number}){
+        if(!(id in this[key]))
+            this[key][id] = {multiplier:0,fixed:0};
+        this[key][id].multiplier += value.multiplier ?? 0;
+        this[key][id].fixed += value.fixed ?? 0;
+    }
+
+    addAttack(value:number){//cap to 200% of base
+        this.attack = Math.min(2*this.baseAttack, this.attack+value);
+    }
+    multiplyAttack(multiplier:number){
+        this.attack = Math.min(2*this.baseAttack, this.attack*(1+multiplier));
+    }
+    unboostAttack(value:number){
+        this.unboostAttackMultiplier *= (1-value);
+    }
+    getAttack():number{
+        return (this.baseAttack + (this.attack - this.baseAttack)*Math.max(0, this.unboostAttackMultiplier));
+    }
+
+    addDefense(value:number){
+        this.defense = Math.min(2*this.baseDefense, this.defense+value);
+    }
+    multiplyDefense(multiplier:number){
+        this.defense = Math.min(2*this.baseDefense, this.defense*(1+multiplier));
+    }
+    unboostDefense(value:number){
+        this.unboostDefenseMultiplier *= (1-value);
+    }
+    getDefense():number{
+        return (this.baseDefense + (this.defense - this.baseDefense)*Math.max(0, this.unboostDefenseMultiplier));
+    }
+
+    addUnit(unit:CurrentUnit):void{
+        this.force.push(unit);
+        this.addUnitToRequirementsData(unit.unitId);
+        this.addAttack(10*(unit.definition.attack || 0));
+        this.addDefense(10*(unit.definition.defense || 0));
+    }
+    removeUnit(slot:number):(CurrentUnit | undefined){
+        if(slot < 0 || slot >= this.force.length)
+            return undefined;
+        const unit = this.force.splice(slot, 1)[0];
+        this.removeUnitFromRequirementsData(unit.unitId);
+        return unit;
+    }
+    summonUnit(unit:CurrentUnit):void{
+        this.unitsToSummon.push(unit);
+    }
+
+    phaseComplete(){
+        for(let i = 0; i < this.unitsToSummon.length; i++){
+            this.force.unshift(this.unitsToSummon[i]);
+            this.addAttack(10*(this.unitsToSummon[i].definition.attack || 0));
+            this.addDefense(10*(this.unitsToSummon[i].definition.defense || 0));
+            this.addUnitToRequirementsData(this.unitsToSummon[i].unitId);
+        }
+        this.unitsToSummon= [];
+    }
+
+    /*
+        count units of each unit id, type, and subtype to speed up later requirement checking
+    */
+    populateRequirementsData(){
+        this.requirementsData = {units:{}, types: {}, subtypes:{}};
+        for(const t in this._data.types)
+            this.requirementsData.types[t] = 0;
+        for(const st in this._data.subtypes)
+            this.requirementsData.subtypes[st] = 0;
+        for(let i = 0; i < this.force.length; i++) {
+            this.addUnitToRequirementsData(this.force[i].unitId);
+        }
+    }
+
+    addUnitToRequirementsData(unitId:number){
+        if(unitId < 10) return;
+        if(!this.requirementsData.units[unitId])
+            this.requirementsData.units[unitId] = 1;
+        else
+            this.requirementsData.units[unitId]++;
+
+        const unitDefinition = this._data.units[unitId];
+        if(unitDefinition.type)
+            this.requirementsData.types[unitDefinition.type]++;
+        if(unitDefinition.sub_type)
+            this.requirementsData.types[unitDefinition.sub_type]++;
+        if(unitDefinition.sub_type2)
+            this.requirementsData.types[unitDefinition.sub_type2]++;
+    }
+    removeUnitFromRequirementsData(unitId:number){
+        if(unitId < 10) return;
+        if(this.requirementsData.units[unitId])
+            this.requirementsData.units[unitId]--;
+
+        const unitDefinition = this._data.units[unitId];
+        if(unitDefinition.type)
+            this.requirementsData.types[unitDefinition.type]--;
+        if(unitDefinition.sub_type)
+            this.requirementsData.types[unitDefinition.sub_type]--;
+        if(unitDefinition.sub_type2)
+            this.requirementsData.types[unitDefinition.sub_type2]--;
+    }
+
+    checkRequirements(skillId:number) {
+        const skill = this._data.skills[skillId];
+        if(!skill.requirements)
+            return true;
+        return skill.requirements.every(req => {
+            const data = this.requirementsData;
+            return (!req.unit_id || data.units[req.unit_id] >= req.count) &&
+                (!req.type_id || data.types[req.type_id] >= req.count) &&
+                (!req.subtype_id || data.subtypes[req.subtype_id] >= req.count);
+        });
+    }
+
+    getRequirementsCount(unit_id?:number, unit_type?:number, unit_subtype?:number):number{
+        return (unit_id ? this.requirementsData.units[unit_id] : 0) +
+            (unit_type ? this.requirementsData.types[unit_type] : 0) +
+            (unit_subtype ? this.requirementsData.subtypes[unit_subtype] : 0);
+    }
+}

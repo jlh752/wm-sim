@@ -1,124 +1,79 @@
-War Metal Battle Simulator
-==========================
 
-The War Metal Battle Simulator runs simulations of [War Metal] (http://synapse-games.com/games/warmetal/) battles and outputs relevant statistics. Use it to check your average damage, test your reinforcement flow, fine-tune your unit ordering, etc.
+# War Metal Battle Simulator (wm-sim) 
 
-* [simple sample] (http://jlh752.github.io/wm-sim)
-* [web worker sample] (http://jlh752.github.io/wm-sim/example_worker.html)
-* [live epic boss simulator] (http://greymarch.x10.mx/e_sim.php)
-* [live pvp simulator] (http://greymarch.x10.mx/b_sim.php)
+![Tests](https://github.com/jlh752/wm-sim/actions/workflows/tests.yml/badge.svg)
 
-##Usage
+A Typescript library that simulates battles for the now-discontinued browser game War Metal.
 
-###Non-Web Worker
+* [demo](http://jlh752.github.io/wm-sim) _Work in progress_
 
-Include the script files on your webpage (you will probably want to concatenate the files to speed up loading).
+## Features
 
-```
-<script type='text/javascript' src='gmsim.main.js'></script>
-<script type='text/javascript' src='gmsim.player.js'></script>
-<script type='text/javascript' src='gmsim.unit.js'></script>
-<script type='text/javascript' src='gmsim.ability.js'></script>
-<script type='text/javascript' src='data/simdata.js'></script>
-```
+*  **Faithful to original game** - the demo contains defintions of all of the existing game units and all of them run as expected in this simulation
+*  **Full integration test suite** - ensures the original game rules are all implemented; quirks and all
+*  **Extensible** - this simulator is not limited to the original game units. You can easily define new units in the game data file
+*  **Custom skills** - it's easy to implement new skills using your own code. An example of this can be seen in the tests file.
+*  **Parameterized output** - separating the display layer from the simulation layer means you can portray the battle however you want such as a statistical dashboard, or even a graphical game interface. A basic text output utility is available which outputs the logs in the style of War Machine
+*  **Typescript** - hard to complain about strong typing
 
->Even if you are intending to use the Web Worker version you should include the files in this way so the browser has them cached. Without doing this, it may take a few seconds to redownload these files every time the script runs.
+## Background
 
-From there, you can run it by instantiating an instance of gmsim.battleRunner
+War Metal was a browser based game from ~2010. It had RPG elements but the core of the game was pitting your force against both player forces and NPC raid bosses. War Metal battles allowed for deep strategy with a rich array of ways that players can manipulate the battle or counter enemy forces. At some point, I decided to build a simulator for the game for 2 main reasons:
+*  **time-gated actions** - like most games at the time (and even now), it time-gated the amount of actions you could take (unless you paid $)
+*  **high cost of failure** - joining in a group raid boss unprepared could cause the raid to fail for all collaborating players
+A simulator solves both of these problems allowing the user to test and tweak their forces as much as they needed.
 
-```
-var runner = new gmsim.battleRunner({
-	'epicMode': 0,
-	'force1': attackingForce,
-	'force2': defendingForce,
-	'power1': attackPower,
-	'power2': defencePower,
-	'defenderLevel': lvl,
-	'doOutput': 1,
-});
-```
+The simulator, along with a suite of other tools and resources I developed for War Metal, ended up becoming quite popular with over 10,000 hits per day which was a lot for such a niche game. But, eventually, the game shutdown and, being server-based, was lost to time.
 
-After creating the runner, you can execute a battle. It will return an object containing the battle results. The battle log can be retrieved with the runner's getText function.
+### New version
+
+I have been looking to hone my skills and learn some new technology and this library was a perfect candidate for such a project. It is a complete rewrite of the original simulator, rebuilt from the ground up with cleaner architecture, extensibility, and strong test coverage. Despite the old version utilising web workers for multi-threading, this new version runs around 100x faster due to smarter architectural decisions and performance-minded coding practices (unusual to consider in JavaScript but it makes a difference). I opted out of web workers due to their overhead being detrimental given the performance improvements.
+
+## Installation
 
 ```
-	var result = runner.battle();
-	var outputText = runner.getText();
+npm install wm-sim
 ```
 
-Possible contents of the results structure are:
-* `dmg1` - total damage of attacker
-* `dmg2` - total damage of defender
-* `atkp` - attack power of attacker
-* `defp` - defence power of defender
-* `h1` - total healing of attacker (this is already factored into the total damage)
-* `h2` - total healing of defender (this is already factored into the total damage)
-* `forcedmg1` - force damage of attacker
-* `forcedmg2` - force damage of defender
-* `currCount1` - collection of reinforcement rates for specific units for attacking player. e.g. currCount1['2001'] will tell you how often the Infantry unit was reinforced
-* `currCount2` - collection of reinforcement rates for specific units for defending player
-* `jamCount1` - collection of jammed rates for specific units for attacking player e.g. currCount1['2001'] will tell you how often your Infantry units were jammed
-* `jamCount2` - collection of jammed rates for specific units for defending player
-* `dmgs1` - collection of average damages for specific units for attacking player
-* `dmgs2` - collection of average damages for specific units for defending player
-* `heals1` - collection of average healing for specific units for attacking player
-* `heals2` - collection of average healing for specific units for defending player
+## Sample Usage
 
-###Web Worker
+```ts
+import {BattleRunner, RenderSingleBattleResult} from 'wm-sim';
 
-A web worker is some JavaScript that is run in a seperate processing thread than the main page. By taking advantage of web workers, we can run multiple instances of the simulator in parallel to reduce the overall execution time. First initialise the web worker like you ususally would.
-
-```
-new Worker('gmsim.main.js');
-```
-
-Initialising the simulator this way is similar to the non-web worker version except it need special arguments to know where to load the rest of the scripts from
-
-```
-workers[i].postMessage({
-	'cmd': 'setup',
-	'epicMode': 1,
-	'force1': '1,81,0,0',
-	'force2': '1,81,0,0',
-	'power1': 1000000,
-	'power2': 1000000,
-	'defenderLevel': 89.77,//89.77 is a special level that will cause the max base damage to be 0
-	'doOutput': 1,
-	'url': url,//e.g. www.yourweb.com
-	'simdata': 'data/simdata.js' //where the data files are
-});
+const config = {
+  player1: {
+    power: 1000000,
+    force: {
+      units: [101],
+      reinforcements: [107,100]
+    }
+  },
+  player2: {
+    power: 500000,
+    force: { units: [], reinforcements: [] },
+  },
+  epicMode: false,
+  data: {
+    units: {
+      100: { name: "Test Unit", type: 2 },
+      101: { name: "Test Unit 2", skills: [{skill_id: 200, chance: 1}]},
+      107: { name: "Test Unit 3", skills: [{skill_id: 209, chance: 1}]}
+    },
+    skills: {
+      200: {name: "Reinforce", reinforce: 1, unit_type: 1},
+      209: {name: "Reinforce 2", reinforce: 1, unit_type: 2}
+    },
+    types: { 1: {name: "Basic Type"}, 2: {name: "Type 2"} },
+    subtypes: { 1: {name: "Basic Subtype"} }
+  }
+};
+const runner = new BattleRunner();
+const result = runner.run(config);
+const output = RenderSingleBattleResult(result, config.data);//or your own method
 ```
 
-Starting a battle
-```
-workers[i].postMessage({
-	'cmd': 'battle'
-});
-```
+## Roadmap
 
-Because of how web workers work, the result is not returned straight to us. Instead, we must wait to recieve a message from the worker.
-
-```
-workers[i].addEventListener('message', (function(a){ return function(e) {
-	var d = e.data;
-	switch(d.msg){
-		case "setup"://wait for worker to setup
-			//now we can battle
-			break;
-		case "battle"://a battle is finished
-			outputText = d.str;
-			battleAfter(d.result, a);//do stuff with the results
-			break;
-		case "error":
-			//d.content contains an error message
-			break;
-	}
-};})(i), false);
-```
-
-##Inputs
-
-The format for a force code is
-`<int version number>,<int formation id>,<int unit id>...,<int boost id>,...<int unit id>`
-where all the units after the boosts are reinforcements. a number less than 10 in a unit slot is ignored.
-
-Rather than creating this by hand, you can use a [drag-and-drop tool] (https://github.com/jlh752/wm-force-editor).
+* improve demo UI and add more interesting presets
+* demo for multi-battle statistical analysis
+* increased extensibility for battle state would be nice

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>wm-sim</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        #app {
+            margin: 20px;
+        }
+        label{
+            display: block;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 8px 0px 20px;
+            outline-color: black;
+        }
+        datalist {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            writing-mode: vertical-lr;
+            width: 100%;
+        }
+
+        datalist option {
+            padding: 0;
+        }
+
+        input[type="range"] {
+            margin: 0;
+        }
+
+        .row{
+            padding: 1em;
+            display: flex;
+        }
+        .column {
+            vertical-align: top;
+            flex: 1;
+        }
+        .column:last-child:not(:first-child){
+            margin-left: 1em;
+            padding-left: 1em;
+            border-left: 1px solid #ccc;
+        }
+        @media (max-width: 600px) {
+            .row {
+                flex-direction: column;
+            }
+            .column {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                border-left: none !important;
+            }
+        }
+details{font-size: .825em;
+  padding: 0 1.25em;
+  border-radius: .25em;display:block;
+  margin-block: 2em;}
+  details[open] {
+  background: #ccc;
+  padding: 0 1.25em 1.25em;
+}
+        summary{
+  padding: .375em 1em;display: list-item;
+  background: #CCC;
+  border-radius: .25em;
+  margin: 0 -1.25em;cursor:pointer;
+  letter-spacing: .05ch;}
+  details[open] summary {
+  border-radius: .25em .25em 0 0;
+}
+.space-above{
+    margin-top:1em;
+}
+    </style>
+    <script type="module" src="/src/index.ts"></script>
+    <link rel="preload" href="/simdata.json" as="fetch" crossorigin>
+</head>
+<body>
+    <form id="battle-config">
+        <details open>
+            <summary><h2 style="display: inline-block; margin:0">Configuration</h2></summary>
+            <div class="row">
+                <div class="column">
+                    <label for='mode-switch' style="display:inline-block">Battle type:</label>
+                    <toggle-switch id="mode-switch" name="mode-switch" pre-label="Boss" post-label="PvP"></toggle-switch>
+                    <br />
+                    <input type="range" id="repetitions-slider" name="repetitions-slider" min="1" max="1000" value="1" list="repetitions-list" />
+                    <datalist id="repetitions-list">
+                        <option value="1" label="1"></option>
+                        <option value="250" label="250"></option>
+                        <option value="500" label="500"></option>
+                        <option value="750" label="750"></option>
+                        <option value="1000" label="1000"></option>
+                    </datalist>
+                    <label for='stat-switch' style="display:inline-block">Stat tracking:</label>
+                    <toggle-switch checked id="stat-switch" name="stat-switch"  pre-label="No" post-label="Yes"></toggle-switch>
+                    <label for='debug-switch' style="display:inline-block">Debug messages:</label>
+                    <toggle-switch checked id="debug-switch" name="debug-switch"  pre-label="No" post-label="Yes"></toggle-switch>
+                </div>
+            </div>
+            <div class="row">
+                <div class="column">
+                    <h2>Attacker</h2>
+                    <label for='force1'>Attacking Force:</label>
+                    <textarea id="force1" placeholder="Enter force data here...">1,7053,1053,1046,1054,1071,1032,1067,1057,1058,2536,2545,2545,2545,2545,2545,2545,2545,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2612,2510,2510,2510,2562,2563,4059,4059,4059,4059,4051,4054,4050,4057,4052,4045,0,0,2526,2190,2559,</textarea>
+                    <br />
+                    <label for='power1'>Attack Power (default: 1,000,000):</label>
+                    <input type="number" id="power1" name="power1" placeholder="Enter attack power value..." value="1000000" />
+                </div>
+                <div class="column">
+                    <h2>Defender</h2>
+                    <label for='boss-select'>Use boss preset:</label>
+                    <select id="boss-select" name="boss-select" is="boss-select" data-file="bosses.json"></select>
+                    <br />
+                    <label for='force2'>Defending Force:</label>
+                    <textarea id="force2" name="force2" placeholder="Enter force data here..."></textarea>
+                    <br />
+                    <label for='power2'>Defense Power (default: 1,000,000):</label>
+                    <input type="number" id="power2" name="power2" placeholder="Enter defence power value..." value="1000000" />
+                    <br />
+                    <label for='level'>Defender Level (default: 89.77):</label>
+                    <input type="number" id="level" name="level" placeholder="Enter defender level value..." value="89.77" step="any" />
+                    <input type="hidden" id="reinforcementConstraints" name="reinforcementConstraints" value="" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="column">
+                    <label for="progress-bar">Battles Progress</label>
+                    <progress value="0" max="1000" id="progress-bar"></progress>
+
+                    <button type="submit" id="battle">Battle</button>
+                </div>
+            </div>
+        </details>
+    </form>
+    <div class="row" id="result"></div>
+</body>
+</html>
