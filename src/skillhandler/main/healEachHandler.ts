@@ -11,15 +11,16 @@ class HealEachHandler implements ISkillHandler {
     applicableTags = ['var_heal'];
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
         const count = player.getRequirementsCount(skill.unit_id, skill.unit_type, skill.unit_subtype);
-        const healValue = RandomRange(0.5*skill.var_heal!*count, 1.5*skill.var_heal!*count)
-        const resultHeal = player.addHeal(skill.heal_cap ? Math.min(skill.heal_cap, healValue) : healValue, skill.flurry || 1);
-        if(resultHeal.value !== 0){
+        const healValue = RandomRange(0.5*skill.var_heal!*count, 1.5*skill.var_heal!*count);
+        const cappedHeal = skill.heal_cap ? Math.min(skill.heal_cap, healValue) : healValue;
+        const resultHeal = player.addHeal(cappedHeal, skill.flurry || 1);
+        //if(resultHeal.value !== 0){
             ctx.result?.logs.push({
                 ...baseLog, type: LogTypes.HEAL,
-                amount: resultHeal.value, prevented: resultHeal.prevented,
+                amount: cappedHeal, prevented: resultHeal.prevented,
                 flurry: skill.flurry
             } as HealLog);
-        }
+        //}
     };
 };
 

@@ -11,13 +11,13 @@ class HealHandler implements ISkillHandler {
     handler = (ctx:IBattleRunner, skill:Skill, player: PlayerBattleState, unit: CurrentUnit, baseLog?: GenericLog) => {
         const baseHeal = (skill?.heal || 0) + (ctx.config!.epicMode ? skill.epic_heal || 0 : 0);
         const resultHeal = player.addHeal(baseHeal, skill.flurry || 1);
-        if(resultHeal.value !== 0){
+        //if(resultHeal.value !== 0){
             ctx.result?.logs.push({
                 ...baseLog, type: LogTypes.HEAL,
-                amount: resultHeal.value, prevented: resultHeal.prevented,
+                amount: baseHeal, prevented: resultHeal.prevented,
                 flurry: skill.flurry
             } as HealLog);
-        }
+        //}
     };
 };
 

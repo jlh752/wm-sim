@@ -41,7 +41,8 @@ export default class BattleRunner implements IBattleRunner {
         this.result = {
             player1: { baseDamage: 0, totalDamage: 0, power: 0 },
             player2: { baseDamage: 0, totalDamage: 0, power: 0 },
-            logs: []
+            logs: [],
+            winner: null
         };
 
         for(const phase of PHASE_ORDER) {
@@ -62,7 +63,10 @@ export default class BattleRunner implements IBattleRunner {
 
         this.result.player1.totalDamage = this.result.player1.baseDamage + this.state.player1.totalDamage - this.state.player2.totalHeal;
         this.result.player2.totalDamage = this.result.player2.baseDamage + this.state.player2.totalDamage - this.state.player1.totalHeal;
-
+        if(this.result.player1.totalDamage > this.result.player2.totalDamage)
+            this.result.winner = 0;
+        else if(this.result.player2.totalDamage > this.result.player1.totalDamage)
+            this.result.winner = 1;
         return this.result;
     }
 
