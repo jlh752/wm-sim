@@ -1,6 +1,6 @@
 {
   "name": "wm-sim",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "private": false,
   "description": "War Metal Battle Simulator",
   "keywords": ["game", "simulator", "war metal", "war machine"],
