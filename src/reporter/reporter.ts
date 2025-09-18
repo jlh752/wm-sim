@@ -29,10 +29,10 @@ export function RenderSingleBattleResult(result: BattleResult, data: DataFile, c
                 if(log.prevented){
                     els.push(LogLine(log.player_id, `${prefix} healing for ${log.prevented} was prevented`));
                 }
-                if((log.prevented || 0) < log.amount){
+                if(log.amount > 0){
                     els.push(LogLine(log.player_id, `${prefix} \
                         used ${data.skills[log.skill_id].name}, \
-                        ${log.amount >= 0 ? `healing for ${log.amount - (log.prevented || 0)} health` : `damaging self for ${-log.amount} damage`}`));
+                        ${log.amount >= 0 ? `healing for ${log.amount} health` : `damaging self for ${-log.amount} damage`}`));
                 }
                 break;
             case LogTypes.JAM:
